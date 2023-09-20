@@ -1,0 +1,13 @@
+#hostnamectl shows information about the current host including static hostname, machine ID, and operating system.
+hostnamectl
+
+#timedatectl shows the time date information including local time, time zone, and system clock information.
+timedatectl
+
+#ntpdate sets the date and time via NTP. Must be ran as root on the local host (unless -q is used). 
+ntpdate
+
+ #ntpdate host synchronizes date and time.
+ ntpdate host
+
+ #ntpdate has it's issues where it tries to matches server time with central time without considering the drifts in local time.
