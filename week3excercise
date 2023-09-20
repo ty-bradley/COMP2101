@@ -1,13 +1,67 @@
-#hostnamectl shows information about the current host including static hostname, machine ID, and operating system.
-hostnamectl
+# Helpful tested commands
 
-#timedatectl shows the time date information including local time, time zone, and system clock information.
-timedatectl
+# If an entry has an entry like so: <value> remove all of it.
 
-#ntpdate sets the date and time via NTP. Must be ran as root on the local host (unless -q is used). 
-ntpdate
+# Example: lshw | grep <device>
+# Example: lshw | grep ens33
 
- #ntpdate host synchronizes date and time.
- ntpdate host
+# System Configuration Commands
 
- #ntpdate has it's issues where it tries to matches server time with central time without considering the drifts in local time.
+# hostnamectl shows information about the current host including static hostname, machine ID, and operating system.
+  
+  hostnamectl
+
+# timedatectl shows the time date information including local time, time zone, and system clock information.
+  
+  timedatectl
+
+# ntpdate sets the date and time via NTP. Must be ran as root on the local host (unless -q is used). 
+
+  ntpdate
+
+ # ntpdate host synchronizes date and time.
+   
+   ntpdate host
+
+ # ntpdate has it's issues where it tries to matches server time with central time without considering the drifts in local time.
+
+# Hardware Configuration Commands
+
+# lshw lists hardware information on the hardware configuration of the machine.
+  
+  lshw
+
+ # lshw doesn't show all info unless ran with sudo or root. You can specify specific devices with -class or -C followed by the class of device you're searching for.
+   
+   sudo lshw -class network
+   sudo lshw -C network
+
+ # You can also grep specifics on lshw
+ 
+   lshw | grep <specific hardware here>
+
+# dmesg is used to exame or control the kernel ring buffer. By default it prints all messages from the kernel buffer.
+  
+  dmesg
+
+ # Use the -H option for human readable output.
+   
+   dmesg -H
+
+# inxi is a command line system information script built for console and IRC.
+# inxi shows system hardware, CPU, drivers, Xorg, Desktop, Kernel, gcc verion(s), Processes, RAM usage, and a wide variety of other information.
+  
+  inxi
+
+# hwinfo probes the system for hardware present within the system. It can be used to generate a system overview log.
+  
+  hwinfo
+
+ # You can specify which piece of hardware you're trying to probe for by adding --<hardware> to the command.
+ 
+   hwinfo --memory
+
+# /sys is an important place in the filesystem to take note of to inspect hardware.
+
+  cd /sys
+
