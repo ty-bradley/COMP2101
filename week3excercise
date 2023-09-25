@@ -85,6 +85,24 @@
 
   lspci
 
-  # Using grep we can filter specific information from the lspci command.
+  # Using grep we can filter specific information from the lspci command, even finding network interface names.
 
     lspci | grep -i vga
+
+# df is a command that assists to identify mounted local disk filesystems.
+# You could add -h to make it print in human readable format.
+# The same command identifies free space within your filesystem holding your home directory.
+
+df -h
+
+# mount also shows mounted local disk file systems. Mount does print everything but it is a bit cluttered.
+
+mount
+
+ # mount can also be used to show mounted network file systems by specifying options:
+ # -t specifies the filesystem type.
+ # (nfs) Network File System, (CIFS) Common Internet File System, (SMBFS) Server Message Block File System
+  
+   mount -t nfs,cifs,smbfs
+
+# To see memory space within your home directory we use df
