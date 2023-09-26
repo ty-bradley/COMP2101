@@ -153,6 +153,7 @@ nslookup LAN_IP_ADDRESS
   # The output would put out for example: "default via 192.168.1.1 dev eth0"
 
 # You can use the 'curl' service in conjunction with the ifconfig.me service to find the IP address the internet sees.
+
 # It shows you the IP address before your username, but you can still input commands as normal.
 
   curl ifconfig.me
@@ -190,3 +191,23 @@ nslookup LAN_IP_ADDRESS
     # You could then reboot the system to ensure the changes persist after a reboot.
 
       sudo reboot
+
+# Installing, updating, and removing software is a frequent task for administators. There are automated tools for managing updates. This exercise practices performing these tasks.
+
+  # apt - Use apt to update your local software databases, then use it to upgrade your current software then install.
+
+  # dpkg - Use dpkg to determine if you have ssh services installed, and what the package name and version are for it, then use dpkg to find out what package supplied the file /bin/bash, then use it to see the list of files that came with your installed ssh service package
+
+  # snap - use snap to view the list of installed snaps on your system, then use it to update your installed snaps, then use it to install the lxd snap if it isn't already installed
+
+  # automated-updates package - install this package so your system stays up to date if it isn't aready installed
+
+  # security updates - register an account on ubuntu.com so you can sign up for free for full security updates, then apply that to your VM (you can always reuse this license later, or sign up with your student account to not use your personal license for the course, then test that you get full security updates for your Ubuntu VM
+
+# This exercise is intended to review the use of command line tools to create file backups, and work with archives.
+
+  # zip - install zip if necessary, then use it on the command line to create a zipfile stored in /root containing your home directory
+
+  # tar - use tar to create a tarfile containing your home directory, store it in /root
+
+  # gzip - use gzip to compress the tarfile of your home directory, renamed as a .tgz instead of a .tar, then verify you can view the table of contents of the compressed tarfile with only the tar command 
