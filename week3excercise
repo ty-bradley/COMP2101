@@ -93,11 +93,11 @@
 # You could add -h to make it print in human readable format.
 # The same command identifies free space within your filesystem holding your home directory.
 
-df -h
+  df -h
 
 # mount also shows mounted local disk file systems. Mount does print everything but it is a bit cluttered.
 
-mount
+  mount
 
  # mount can also be used to show mounted network file systems by specifying options:
  # -t specifies the filesystem type.
@@ -105,4 +105,88 @@ mount
   
    mount -t nfs,cifs,smbfs
 
-# To see memory space within your home directory we use df
+# To see how much your home directory is taking up we use du.
+# We can specify the directory
+# -s option is used to specify a summary
+# -h is used to specify display sizes within a human readable format.
+
+  du -sh /path/to/directory
+
+# We can specify our home directory with a tilde.
+  
+  du -sh ~
+
+# If we are trying to find how many files are in a specified directory we can use  the find command.
+# 'type f' is an option that specifies the types of files to search for. 'type f' is regular files.
+# 'wc -l' the command is used to count the lines of text in it's input.
+# -l option specifies that you want to count lines.
+# When you combine 'type f' and 'wc -l' you count the number of lines (in this case, file paths) recieved when putting in the 'find' command.
+
+  find /path/to/directory -type f | wc -l
+
+# You can use the 'ifconfig' and 'ip' command to idenify the LAN, IP address, subnet mask size and the name of the network interface used for your LAN.
+# When running these commands look for eth0, enpXsY, where the X and Y numbers.
+# Within details for the LAN interface, the entry for inet will be your LAN IP address, and the entry under 'inet' for the subnet mask size, typically written as '/XX'
+
+  ifconfig
+
+  ip a
+
+# To determine your hostname associated with a LAN IP address and what IP is currently associated with the host name
+
+  ip a | grep inet
+
+# Once you identify the IP address you can use the 'nslookup' command along with the IP to check the hostname.
+# This command will attempt to resolve the LAN IP to the hostname.
+
+nslookup LAN_IP_ADDRESS
+
+  # You can also do a lookup on the hostname
+    
+    nslookup HOSTNAME
+
+# You can use the 'ip' command to find your gateway router's IP address.
+# You can the use the 'ip route' command to display the routing table and locate the default gateway.
+
+  ip route | grep default
+
+  # The output would put out for example: "default via 192.168.1.1 dev eth0"
+
+# You can use the 'curl' service in conjunction with the ifconfig.me service to find the IP address the internet sees.
+# It shows you the IP address before your username, but you can still input commands as normal.
+
+  curl ifconfig.me
+
+# To modify your configuration to have a static IP address not using DHCP you could
+# Identify the network interface name using 'ifconfig' or 'ip a'
+# Look for your primary network interface names like 'eth0' or 'enp0s3'.
+
+  ifconfig
+
+  # Then edit the network configuration file for that interface. On unix we'd be looking in /etc/network/interfaces
+  
+    sudo nano /etc/network/interfaces
+
+    # In the network configuration file replace the IP addresses or add IP addresses as needed.
+    #
+    # auto <interface>
+    # iface <interface> inet static
+    #     address 192.168.1.201       # Your desired static IP address
+    #     netmask 255.255.255.0       # Your subnet mask
+    #     gateway 192.168.1.1         # Your gateway / router IP address
+    #     dns-nameservers 8.8.8.8     # Optinal DNS server(s)
+    #
+    # Save the configuration file an exit the text editor.
+    # Update the /etc/hosts to associate a hostname with the new static IP address. You should use root privileges when editing this file.
+    
+      sudo nano /etc/hosts
+
+    # add a line at the end of this file in this format
+    # <static_IP_address> <hostname>
+    # save the /etc/hosts file and then restart the network service to apply the changes.
+    
+      sudo service networking restart
+
+    # You could then reboot the system to ensure the changes persist after a reboot.
+
+      sudo reboot
