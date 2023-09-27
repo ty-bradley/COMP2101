@@ -292,3 +292,5 @@ ip r | grep -v default
 
 #  >  operator clobbers the data and writes over any past data in a variable or file.
 #  >> operator appends the data and places the data on the end of a variable.
+
+HELLO
