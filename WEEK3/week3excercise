@@ -211,3 +211,77 @@ nslookup LAN_IP_ADDRESS
   # tar - use tar to create a tarfile containing your home directory, store it in /root
 
   # gzip - use gzip to compress the tarfile of your home directory, renamed as a .tgz instead of a .tar, then verify you can view the table of contents of the compressed tarfile with only the tar command 
+
+# wc - prints newline, word, and byte counts for each file.
+
+  # With options you can specify to select which counts are printed
+
+  # Here are a few examples:
+  # -c, --bytes
+  # -m, --chars
+  # -l, --lines
+  # -w, --words
+
+wc - l
+
+# ps - reports a snapshot of the current processes.
+
+  # Human friendly command, comes with titles and shows which processes the user is running.
+
+  # ps -e to show all processes in the machine.
+
+  # Many options for specifying or formatting.
+
+  # -o can be used to specify what information you would like to show.
+
+ps
+
+# sort command sorts lines of text files
+
+ # Where there is no file, read standard output.
+
+ # Alot of options available to choose to sort by.
+
+sort
+
+# pipes are very handy within code
+
+ # Allows you to run commands that work with data from other commands without having to save the data first.
+
+ # pipes gather data and then process it as a stream.
+
+ # When building pipelines, consider the following logical sequence of actions to implement:
+
+ # GATHER DATA | FILTER DATA | MANIPULATE DATA | SUMMARIZE OR FORMAT DATA
+
+   # Example:
+
+ls | wc -l
+
+ps -eo user --no-headers | sort | uniq -c
+
+ip a s eno1 | grep -w inet | awk '{print$2}'
+
+# grep prints lines that match patterns.
+
+  # grep has a lot of options for specification.
+
+  # fgrep prints lines quickly, ignoring complex characters.
+
+    # Example: grep A* | will literally look for other lines that contain A*.
+
+    # Normal grep would print any line that begins with a capital A, and then anything after.
+
+  # grep example specifications:
+
+  # grep -i, --ignore-case | Ignore case distinctions in patterns and input data, characters that only differ in case match each other.
+
+find ~ | grep -i lostfile
+
+  # grep -w, --word-regexp | Select only those lines containing matches that form whole words.
+
+ip a | grep -w inet
+
+  # grep -v, --invert-match | Invert the sense of matching, select non- matching lines.
+
+ip r | grep -v default
