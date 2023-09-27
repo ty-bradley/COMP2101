@@ -285,3 +285,10 @@ ip a | grep -w inet
   # grep -v, --invert-match | Invert the sense of matching, select non- matching lines.
 
 ip r | grep -v default
+
+
+# The > and >> operators tells bash to connect the output to a file before starting the command running
+# similarly to how the | (pipe) operator tells bash to connect the output to one command to the input of another.
+
+#  >  operator clobbers the data and writes over any past data in a variable or file.
+#  >> operator appends the data and places the data on the end of a variable.
