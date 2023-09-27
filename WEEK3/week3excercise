@@ -1,0 +1,213 @@
+#Helpful tested commands
+
+# If an entry has an entry like so: <value> remove all of it.
+
+# Example: lshw | grep <device>
+# Example: lshw | grep ens33
+
+# System Configuration Commands
+
+# hostnamectl shows information about the current host including static hostname, machine ID, and operating system.
+  
+  hostnamectl
+
+# timedatectl shows the time date information including local time, time zone, and system clock information.
+  
+  timedatectl
+
+# ntpdate sets the date and time via NTP. Must be ran as root on the local host (unless -q is used). 
+
+  ntpdate
+
+ # ntpdate host synchronizes date and time.
+   
+   ntpdate host
+
+ # ntpdate has it's issues where it tries to matches server time with central time without considering the drifts in local time.
+
+# Hardware Configuration Commands
+
+# lshw lists hardware information on the hardware configuration of the machine.
+  
+  lshw
+
+ # lshw doesn't show all info unless ran with sudo or root. You can specify specific devices with -class or -C followed by the class of device you're searching for.
+   
+   sudo lshw -class network
+   sudo lshw -C network
+
+ # You can also grep specifics on lshw
+ 
+   lshw | grep <specific hardware here>
+
+# dmesg is used to examine or control the kernel ring buffer. By default it prints all messages from the kernel buffer.
+  
+  dmesg
+
+ # Use the -H option for human readable output.
+   
+   dmesg -H
+
+# lscpu displays information about the CPU architecture of the system. lscpu also displays number of physical sockets, chips, and cores in the host system.
+
+ lscpu
+
+# inxi is a command line system information script built for console and IRC.
+# inxi shows system hardware, CPU, drivers, Xorg, Desktop, Kernel, gcc verion(s), Processes, RAM usage, and a wide variety of other information.
+  
+  inxi
+
+# hwinfo probes the system for hardware present within the system. It can be used to generate a system overview log.
+  
+  hwinfo
+
+ # You can specify which piece of hardware you're trying to probe for by adding --<hardware> to the command.
+ 
+   hwinfo --memory
+
+# /sys is an important place in the filesystem to take note of to inspect hardware.
+
+  cd /sys
+
+# lsblk prints all block devices (except RAM disks) in a tree-like format by default. You can use lsblk --help to get a lisit of all available columns.
+  lsblk
+
+  # lsblk can specify information about the sda device only with "-d"
+  # You can have lsblk print information in the output field of a specific device with -o
+  # You can get information about which devices you can search for with --HELP
+    
+  # This command specifies in the output of the name of the device and model if available.
+
+    lsblk -d -o NAME,MODEL
+
+# lspci displays information about PCI buses in the system and the devices connected to them.
+# By default, it will show a brief list of all devices.
+
+  lspci
+
+  # Using grep we can filter specific information from the lspci command, even finding network interface names.
+
+    lspci | grep -i vga
+
+# df is a command that assists to identify mounted local disk filesystems.
+# You could add -h to make it print in human readable format.
+# The same command identifies free space within your filesystem holding your home directory.
+
+  df -h
+
+# mount also shows mounted local disk file systems. Mount does print everything but it is a bit cluttered.
+
+  mount
+
+ # mount can also be used to show mounted network file systems by specifying options:
+ # -t specifies the filesystem type.
+ # (nfs) Network File System, (CIFS) Common Internet File System, (SMBFS) Server Message Block File System
+  
+   mount -t nfs,cifs,smbfs
+
+# To see how much your home directory is taking up we use du.
+# We can specify the directory
+# -s option is used to specify a summary
+# -h is used to specify display sizes within a human readable format.
+
+  du -sh /path/to/directory
+
+# We can specify our home directory with a tilde.
+  
+  du -sh ~
+
+# If we are trying to find how many files are in a specified directory we can use  the find command.
+# 'type f' is an option that specifies the types of files to search for. 'type f' is regular files.
+# 'wc -l' the command is used to count the lines of text in it's input.
+# -l option specifies that you want to count lines.
+# When you combine 'type f' and 'wc -l' you count the number of lines (in this case, file paths) recieved when putting in the 'find' command.
+
+  find /path/to/directory -type f | wc -l
+
+# You can use the 'ifconfig' and 'ip' command to idenify the LAN, IP address, subnet mask size and the name of the network interface used for your LAN.
+# When running these commands look for eth0, enpXsY, where the X and Y numbers.
+# Within details for the LAN interface, the entry for inet will be your LAN IP address, and the entry under 'inet' for the subnet mask size, typically written as '/XX'
+
+  ifconfig
+
+  ip a
+
+# To determine your hostname associated with a LAN IP address and what IP is currently associated with the host name
+
+  ip a | grep inet
+
+# Once you identify the IP address you can use the 'nslookup' command along with the IP to check the hostname.
+# This command will attempt to resolve the LAN IP to the hostname.
+
+nslookup LAN_IP_ADDRESS
+
+  # You can also do a lookup on the hostname
+    
+    nslookup HOSTNAME
+
+# You can use the 'ip' command to find your gateway router's IP address.
+# You can the use the 'ip route' command to display the routing table and locate the default gateway.
+
+  ip route | grep default
+
+  # The output would put out for example: "default via 192.168.1.1 dev eth0"
+
+# You can use the 'curl' service in conjunction with the ifconfig.me service to find the IP address the internet sees.
+
+# It shows you the IP address before your username, but you can still input commands as normal.
+
+  curl ifconfig.me
+
+# To modify your configuration to have a static IP address not using DHCP you could
+# Identify the network interface name using 'ifconfig' or 'ip a'
+# Look for your primary network interface names like 'eth0' or 'enp0s3'.
+
+  ifconfig
+
+  # Then edit the network configuration file for that interface. On unix we'd be looking in /etc/network/interfaces
+  
+    sudo nano /etc/network/interfaces
+
+    # In the network configuration file replace the IP addresses or add IP addresses as needed.
+    #
+    # auto <interface>
+    # iface <interface> inet static
+    #     address 192.168.1.201       # Your desired static IP address
+    #     netmask 255.255.255.0       # Your subnet mask
+    #     gateway 192.168.1.1         # Your gateway / router IP address
+    #     dns-nameservers 8.8.8.8     # Optinal DNS server(s)
+    #
+    # Save the configuration file an exit the text editor.
+    # Update the /etc/hosts to associate a hostname with the new static IP address. You should use root privileges when editing this file.
+    
+      sudo nano /etc/hosts
+
+    # add a line at the end of this file in this format
+    # <static_IP_address> <hostname>
+    # save the /etc/hosts file and then restart the network service to apply the changes.
+    
+      sudo service networking restart
+
+    # You could then reboot the system to ensure the changes persist after a reboot.
+
+      sudo reboot
+
+# Installing, updating, and removing software is a frequent task for administators. There are automated tools for managing updates. This exercise practices performing these tasks.
+
+  # apt - Use apt to update your local software databases, then use it to upgrade your current software then install.
+
+  # dpkg - Use dpkg to determine if you have ssh services installed, and what the package name and version are for it, then use dpkg to find out what package supplied the file /bin/bash, then use it to see the list of files that came with your installed ssh service package
+
+  # snap - use snap to view the list of installed snaps on your system, then use it to update your installed snaps, then use it to install the lxd snap if it isn't already installed
+
+  # automated-updates package - install this package so your system stays up to date if it isn't aready installed
+
+  # security updates - register an account on ubuntu.com so you can sign up for free for full security updates, then apply that to your VM (you can always reuse this license later, or sign up with your student account to not use your personal license for the course, then test that you get full security updates for your Ubuntu VM
+
+# This exercise is intended to review the use of command line tools to create file backups, and work with archives.
+
+  # zip - install zip if necessary, then use it on the command line to create a zipfile stored in /root containing your home directory
+
+  # tar - use tar to create a tarfile containing your home directory, store it in /root
+
+  # gzip - use gzip to compress the tarfile of your home directory, renamed as a .tgz instead of a .tar, then verify you can view the table of contents of the compressed tarfile with only the tar command 
