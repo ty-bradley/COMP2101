@@ -1,11 +1,18 @@
 #!/bin/bash
 
+# Show information about the current hardware present within device. 
+
+# Get current user and store it within a variable. 'whoami' command prints the current user's username to the terminal.
+
 USER=$(whoami)
+
+# use 'date' command with the '+%T"' format specifier to format the current output in 24-hour format (HH:MM:SS)
+
 TIME=$(date +"%T")
 
 echo
 echo "-------------------------------------"
-echo "Hardware summarry report for:" $USER
+echo "Hardware summary report for:" $USER
 echo "-------------------------------------"
 echo "Report generated at:" $TIME
 echo "_____________________________________"
