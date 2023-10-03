@@ -17,6 +17,13 @@ echo "--------------------------------------"
 echo "Report generated at:" $TIME
 echo "_______________________________________"
 echo
+
+# hwinfo probes the system for hardware present within the system. It can be used to generate a system overview log.
+
+# You can specify which piece of hardware you're trying to probe for by adding --<hardware> to the command.
+
+hwinfo --memory
+
 # df is a command that assists to identify mounted local disk filesystems.
 # add -h to make it print in human readable format.
 # The same command identifies free space within your filesystem holding your home directory.
