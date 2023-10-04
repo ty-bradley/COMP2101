@@ -41,3 +41,17 @@ echo hello\
 world
 
 # would return: hello world on one line
+
+# * substitutes for file names, careful when working or using this character in your data.
+
+# ? means one character here.
+
+# ls ? would find all files with single characters.
+# ls ?? would find all files with two characters.
+# ls a?? would find all files that start with a and end with two characters.
+
+# ls [bc] would find all files with a single character that contain either b or c.
+# ls a[bc]? would find all files that start with a, have a second character with b or c, and last character can be anything but must contain 3 characters.
+
+# ls *\ * would find all files containing a space before, after or just a space.
+# ls *' '* would find all files containing quotes and text before or after.
