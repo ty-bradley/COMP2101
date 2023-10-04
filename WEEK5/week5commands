@@ -55,3 +55,14 @@ world
 
 # ls *\ * would find all files containing a space before, after or just a space.
 # ls *' '* would find all files containing quotes and text before or after.
+
+# Bash can do basic arithmetic on integers.
+# put arithmetic statements inside $(( )) - there are additional operators.
+# +, -, *, /, %
+
+# $RANDOM algorithm is a built in variable and will output a random variable.
+# $RANDOM algorithm is not very good so you shouldn't use it for complex.
+
+# /dev/random hooks into the kernel and prints binary data. Bash cannot convert binary to print.
+# dd if=/dev/random bs=16 count =1
+
