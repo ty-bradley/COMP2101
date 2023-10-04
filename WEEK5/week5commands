@@ -66,3 +66,10 @@ world
 # /dev/random hooks into the kernel and prints binary data. Bash cannot convert binary to print.
 # dd if=/dev/random bs=16 count =1
 
+# \ in front of any command to turn off it's alias.
+
+# sed, awk are advanced data processing tools and have their own lanuage.
+# You can enter commands to edit files and give you the output.
+
+# Good practice for variable lookup is to add "" around your variable if it uses spaces.
+# myvar="$vowels" for example if $vowels='a e i o u'
