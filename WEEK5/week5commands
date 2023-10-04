@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# bc - An arbitrary precision calculator language
+
+bc
+
+# -- is an option that tells MOST commands to stop looking for options.
+# if you were working with data that started with a dash this is how you would approach that.
+
+nano -- -x
+
+# bash debug
+# set -x to turn on debug. (Shows you the command before it runs.)
+# set +x to turn off debug.
+
+# Good format for creating templates rather than having a ton of echo commands.
+
+echo "
+My Variables
+============
+
+my cmd: $mycmd
+myfile: $myfile
+myname: $myname
+
+============
+"
+
+# You can use the bash command to run the command in bash.
+
+bash /path/to/file
+
+# You can run bash in debug mode once instead of for every command for the shell you can set a -x as an option.
+# It starts a new bash process and runs it, meaning local variables are not accessible to this new bash process.
+
+bash -x /path/to/file
+
+# You can use \ to turn the special character after it, like enter
+
+echo hello\
+world
+
+# would return: hello world on one line
