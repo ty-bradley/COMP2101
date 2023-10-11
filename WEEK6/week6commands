@@ -1,3 +1,42 @@
 #!/bin/bash
 
-#
+# The & value takes whatever command you gave it and runs it in the background and gives you access back to the prompt immediately.
+
+sleep 5 &
+
+# jobs let's you see the current commands that are working.
+
+jobs
+
+# Sleep command tells the bash shell to wait a specified amount of time.
+# e.g. wait 5 seconds:
+
+sleep 5
+
+# Exit status 0 means success, any failure results in a number between 1-255. Google if neccessary.
+
+# The && operator between two commands means that if the first command succeeded, run the second command.
+# Otherwise, do not.
+
+# If there is an entry for ty is will be listed along with the second command, otherwise nothing will display.
+grep -q ty /etc/passwd && echo "User dennis is in the passwd file"
+
+# The || operator between two commands manes that only runs the second command if the first line fails.
+# Otherwise, run the first command.
+
+# If there are no files owned by ty, the first command is ignored and the second one is executed.
+sudo find / -user ty -ls || echo "User ty owns no files on this system"
+
+# Exit command makes the current process end.
+# When this is in your script it will exit at that current spot.
+
+# Test command 
+# -d for directory
+# -f for files
+
+
+# for ip in $(ip a -w inet|awk '{print $2}'); do
+# echo I have ip address $ip
+# done
+
+# for will echo each one within the list.
