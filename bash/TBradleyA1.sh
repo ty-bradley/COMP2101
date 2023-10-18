@@ -100,36 +100,45 @@ Video: $MAKEMODELVGU
 Network Information
 -------------------
 
-# Fully Qualified Domain Name
+`# Fully Qualified Domain Name`
 FQDN: $FQDN
-# IP Address for the hostname
+`# IP Address for the hostname`
 Host Address: $IPHOST
-# IP Address for the Gateway
+`# IP Address for the Gateway`
 Gateway IP: $GATEWAYIP
-# IP Address of the DNS Server
+`# IP Address of the DNS Server`
 DNS Server: $DNSIP
-# Make and model of network card
+`# Make and model of network card`
 InterfaceName: $NETCARD
-# IP Address in CIDR FORMAT
+`# IP Address in CIDR FORMAT`
 IP Address: $IPCIDR
+
+# Lists IP Address for the hostname
+IPHOST=$(echo "null")
+
+# Lists IP Adress for the Gateway
+GATEWAYIP=$(echo "null")
+
+#Lists IP Addreses of the DNS Server
+DNSIP=$(echo "null")
 
 ------------- 
 System Status
 -------------
 
-# Lists all users currently logged into the system
+`# Lists all users currently logged into the system`
 Users Logged In: $USERSLOGGEDIN
-# Shows free space for local filesystems in format: / MOUNTPOINT N
+`# Shows free space for local filesystems in format: / MOUNTPOINT N`
 Disk Space: $FREEDISKSPACE
-# Lists process count
+`# Lists process count`
 Process Count: $PROCESSCOUNT
-# Lists load averages
+`# Lists load averages`
 Load Averages: $LOADAVERAGES
-# Lists memory allocation
+`# Lists memory allocation`
 Memory Allocation: $MEMORYALLOCATION
-# Lists currently listening network ports
+`# Lists currently listening network ports`
 Listening Network Ports: $LISTENINGNETWORKPORTS
-# Lists data from UFW Show
+`# Lists data from UFW Show`
 UFW Rules: $UFWRULES
 
 "
