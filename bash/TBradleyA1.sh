@@ -62,7 +62,9 @@ CURRENTANDMAXSPEEDCPU="${CPUSPEEDGHZ} ${CPUSPEEDMHZ}MHz)"
 SIZERAM=$(free --giga -h | sed -n '2p' | awk '{print $2"igs alloted to VM. (" $4 " free)"}')
 
 # Make and model of video card
-MAKEMODELVGU=$(echo "null")
+MODELVGU=$(sudo lshw -C display | grep -w product | awk '{for (i = 2; i <= NF; i++) printf $i" "; print ""}')
+MAKEVGU=$(sudo lshw -C display | grep -w vendor | awk '{print $2}')
+MAKEMODELVGU="${PRODUCTVGU} ${MAKEVGU}"
 
 # Make, model, and size for all installed disks.
 MAKEMODELSIZEDISK=$(echo "null")
@@ -152,7 +154,9 @@ ${GREEN}Ram:${RESET} $SIZERAM
 `#disk(s): MAKE AND MODEL AND SIZE FOR ALL INSTALLED DISKS`
 ${GREEN}Disk(s):${RESET} $MAKEMODELSIZEDISK
 `#Video: MAKE AND MODEL OF VIDEO CARD`
-${GREEN}Video:${RESET} $MAKEMODELVGU
+${GREEN}Video Card Make:${RESET} $MAKEVGU
+`#Video: MAKE AND MODEL OF VIDEO CARD`
+${GREEN}Video Card Model:${RESET} $MODELVGU
 
 
 ------------------- 
