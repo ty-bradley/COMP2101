@@ -52,8 +52,8 @@ DISTROWITHVERSION=$(echo $PRETTY_NAME)
 # Current uptime.
 UPTIME=$(uptime -p | cut -d' ' -f2-)
 
-# Current CPU information.
-CPUINFO=$(awk -F: '/description/ {print $2}' LSHWOUTPUT.txt | sed 's/^ *//')
+#cpu: PROCESSOR MAKE AND MODEL.
+CPUINFO=$(cat LSHWOUTPUT.txt | grep CPU | grep product | head -n 1 | awk -F': ' '{print $2}')
 
 # Current and Max Speed of CPU
 CPUSPEEDMAX=$(cat /proc/cpuinfo | grep -w "model name" | head -n 1 | awk '{print $9}')
@@ -64,8 +64,8 @@ CURRENTANDMAXSPEEDCPU=" ${LIGHTGREEN}Current:${RESET} (${CPUSPEEDCURRENT}MHz) ${
 SIZERAM=$(free --giga -h | sed -n '2p' | awk '{print $2"igs alloted to VM. (" $4 " free)"}')
 
 # Make and model of video card
-MODELVGU=$(awk -F: '/product/ {print $2}' lshw_output.txt | sed 's/^ *//')
-MAKEVGU=$(awk -F: '/vendor/ {print $2}' lshw_output.txt | sed 's/^ *//')
+MODELVGU=$(grep -A 11 'display' LSHWOUTPUT.txt | grep product | head -n 1 | awk -F': ' '{print $2}')
+MAKEVGU=$(grep -A 11 'display' LSHWOUTPUT.txt | grep vendor| head -n 1 | awk -F': ' '{print $2}')
 MAKEMODELVGU="${PRODUCTVGU} ${MAKEVGU}"
 
 # Make, model, and size for all installed disks
@@ -97,10 +97,10 @@ GATEWAYIP=$(ip route | awk '/default/ {print $3}')
 # Lists IP Addreses of the DNS Server
 DNSIP=$(grep -w 'nameserver' /etc/resolv.conf | awk '{print $2}')
 
-# Lists IP Addreses of the DNS Server
-NETCARD=$(awk -F 'description: ' '/description:/ {print $2; exit}' lshw_output.txt)
+# Make and model of network card
+NETCARD=$(awk -F 'description: ' '/description:/ {print $2; exit}' LSHWOUTPUT.txt)
 
-# Lists IP Addresses of the DNS Server
+# IP Address in CIDR FORMAT
 IPCIDR=$(ip a | awk '/inet .* brd / {print $2; exit}')
 
 # Lists all users currently logged into the system
@@ -223,6 +223,6 @@ ${GREEN}UFW Rules:${RESET} $UFWRULES
 
 "
 
-sudo rm LSHWOUTPUT.txt.txt
+#sudo rm LSHWOUTPUT.txt
 
 #End of File
