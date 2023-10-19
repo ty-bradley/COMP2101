@@ -10,6 +10,8 @@
 # Run the source command to access distribution name and version for use later in the script.
 source /etc/os-release
 
+sudo lshw > LSHWOUTPUT.txt
+
 # Define color variables
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -51,7 +53,7 @@ DISTROWITHVERSION=$(echo $PRETTY_NAME)
 UPTIME=$(uptime -p | cut -d' ' -f2-)
 
 # Current CPU information.
-CPUINFO=$(sudo lshw -C cpu | grep -w version | sed -n '3p' | awk '{for (i = 2; i <= NF; i++) printf $i" "; print ""}')
+CPUINFO=$(awk -F: '/description/ {print $2}' lshw_output.txt | sed 's/^ *//')
 
 # Current and Max Speed of CPU
 CPUSPEEDMAX=$(cat /proc/cpuinfo | grep -w "model name" | head -n 1 | awk '{print $9}')
@@ -220,4 +222,7 @@ $LISTENINGNETWORKPORTS
 ${GREEN}UFW Rules:${RESET} $UFWRULES
 
 "
+
+sudo rm lshw_output.txt
+
 #End of File
