@@ -51,12 +51,12 @@ DISTROWITHVERSION=$(echo $PRETTY_NAME)
 UPTIME=$(uptime -p | cut -d' ' -f2-)
 
 # Current CPU information.
-CPUINFO=$(hwinfo --short --cpu | sed -n '2p' | sed 's/^[ \t]*//' | awk '{print $1, $2, $3, $4}')
+CPUINFO=$(sudo lshw -C cpu | grep -w version | sed -n '3p' | awk '{for (i = 2; i <= NF; i++) printf $i" "; print ""}')
 
 # Current and Max Speed of CPU
-CPUSPEEDGHZ=$(hwinfo --short --cpu | sed -n '2p' | sed 's/^[ \t]*//' | awk '{print $6}')
-CPUSPEEDMHZ=$(hwinfo --short --cpu | sed -n '2p' | sed 's/^[ \t]*//' | awk '{print "("$7}')
-CURRENTANDMAXSPEEDCPU="${CPUSPEEDGHZ} ${CPUSPEEDMHZ}MHz)"
+CPUSPEEDMAX=$(cat /proc/cpuinfo | grep -w "model name" | head -n 1 | awk '{print $9}')
+CPUSPEEDCURRENT=$(cat /proc/cpuinfo | grep -w "cpu MHz" |head -n 1 | awk '{print $4}')
+CURRENTANDMAXSPEEDCPU=" ${LIGHTGREEN}Current:${RESET} (${CPUSPEEDCURRENT}MHz) ${LIGHTGREEN}Max:${RESET} (${CPUSPEEDMAX})"
 
 # Current size of RAM allotted to VM
 SIZERAM=$(free --giga -h | sed -n '2p' | awk '{print $2"igs alloted to VM. (" $4 " free)"}')
@@ -66,53 +66,69 @@ MODELVGU=$(sudo lshw -C display | grep -w product | awk '{for (i = 2; i <= NF; i
 MAKEVGU=$(sudo lshw -C display | grep -w vendor | awk '{print $2}')
 MAKEMODELVGU="${PRODUCTVGU} ${MAKEVGU}"
 
-# Make, model, and size for all installed disks.
-MAKEMODELSIZEDISK=$(echo "null")
+# Make, model, and size for all installed disks
+MAKEMODELSIZEDISK=$(lsblk -io NAME,MODEL,SIZE | awk 'NF >= 3 {print}')
+
+# Get the list of available disk names from lsblk -io NAME
+AVAILABLEDISKS=$(lsblk -io NAME)
+
+# Initialize a variable to store matched lines
+INSTALLEDDISKS=""
+
+# Loop through the available disks and store matching entries
+for DISKS in $AVAILABLEDISKS; do
+  MATCHEDISK=$(echo "$MAKEMODELSIZEDISK" | grep -w "$DISKS")
+  if [ -n "$MATCHEDISK" ]; then
+    INSTALLEDDISKS+="$MATCHEDISK\n"
+  fi
+done
 
 # Fully qualified domain name
-FQDN=$(echo "null")
+FQDN=$(hostname -f)
 
 # Lists IP Address for the hostname
-IPHOST=$(echo "null")
+IPHOST=$(host $(hostname) | head -n 1 | awk '{print $NF}')
 
 # Lists IP Adress for the Gateway
-GATEWAYIP=$(echo "null")
+GATEWAYIP=$(ip route | awk '/default/ {print $3}')
 
 # Lists IP Addreses of the DNS Server
-DNSIP=$(echo "null")
+DNSIP=$(grep -w 'nameserver' /etc/resolv.conf | awk '{print $2}')
 
 # Lists IP Addreses of the DNS Server
-NETCARD=$(echo "null")
+NETCARD=$(lshw -C network | awk -F 'description: ' '/description:/{print $2; exit}')
 
-# Lists IP Addreses of the DNS Server
-IPCIDR=$(echo "null")
+# Lists IP Addresses of the DNS Server
+IPCIDR=$(ip a | awk '/inet .* brd / {print $2; exit}')
 
 # Lists all users currently logged into the system
-USERSLOGGEDIN=$(echo "null")
+USERSLOGGEDIN=$(who -u | awk '{print $1}')
 
 # Shows free space for local filesystems in format: / MOUNTPOINT N
-FREEDISKSPACE=$(echo "null")
+FREEDISKSPACE=$(df -h --output=source,avail)
 
 # Lists process count
-PROCESSCOUNT=$(echo "null")
+PROCESSCOUNT=$(ps -e | wc -l)
 
 # Lists load averages
-LOADAVERAGES=$(echo "null")
+LOADAVERAGES=$(uptime | awk -F'[a-zA-Z: ]+' '{print $2, $3, $4}')
 
 # Lists memory allocation
-MEMORYALLOCATION=$(echo "null")
+MEMORYALLOCATION=$(free -h)
 
 # Lists currently listening network ports
-LISTENINGNETWORKPORTS=$(echo "null")
+LISTENINGNETWORKPORTS=$(ss -tuln | grep -w LISTEN)
 
 # Lists data from UFW Show
-UFWRULES=$(echo "null")
+UFWRULES=$(sudo ufw status)
 
 
 # Enstantiating variable names for script ends here
 #-----------------------------------------------------
 
 echo -e "
+----------------------------------
+
     ${RED}System Report${RESET}
 
 ----------------------------------
@@ -152,7 +168,8 @@ ${GREEN}Speed:${RESET} $CURRENTANDMAXSPEEDCPU
 `#Ram: SIZE OF INSTALLED RAM`
 ${GREEN}Ram:${RESET} $SIZERAM
 `#disk(s): MAKE AND MODEL AND SIZE FOR ALL INSTALLED DISKS`
-${GREEN}Disk(s):${RESET} $MAKEMODELSIZEDISK
+${GREEN}Disk(s): ${RESET} 
+$INSTALLEDDISKS
 `#Video: MAKE AND MODEL OF VIDEO CARD`
 ${GREEN}Video Card Make:${RESET} $MAKEVGU
 `#Video: MAKE AND MODEL OF VIDEO CARD`
@@ -174,7 +191,7 @@ ${GREEN}Gateway IP:${RESET} $GATEWAYIP
 `# IP Address of the DNS Server`
 ${GREEN}DNS Server:${RESET} $DNSIP
 `# Make and model of network card`
-${GREEN}InterfaceName:${RESET} $NETCARD
+${GREEN}Interface Name:${RESET} $NETCARD
 `# IP Address in CIDR FORMAT`
 ${GREEN}IP Address:${RESET} $IPCIDR
 
@@ -187,15 +204,18 @@ ${CYAN}System Status${RESET}
 `# Lists all users currently logged into the system`
 ${GREEN}Users Logged In:${RESET} $USERSLOGGEDIN
 `# Shows free space for local filesystems in format: / MOUNTPOINT N`
-${GREEN}Disk Space:${RESET} $FREEDISKSPACE
+${GREEN}Disk Space:${RESET} 
+$FREEDISKSPACE
 `# Lists process count`
 ${GREEN}Process Count:${RESET} $PROCESSCOUNT
 `# Lists load averages`
 ${GREEN}Load Averages:${RESET} $LOADAVERAGES
 `# Lists memory allocation`
-${GREEN}Memory Allocation:${RESET} $MEMORYALLOCATION
+${GREEN}Memory Allocation:${RESET} 
+$MEMORYALLOCATION
 `# Lists currently listening network ports`
-${GREEN}Listening Network Ports:${RESET} $LISTENINGNETWORKPORTS
+${GREEN}Listening Network Ports:${RESET} 
+$LISTENINGNETWORKPORTS
 `# Lists data from UFW Show`
 ${GREEN}UFW Rules:${RESET} $UFWRULES
 
