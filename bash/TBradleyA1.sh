@@ -61,7 +61,7 @@ CPUSPEEDCURRENT=$(cat /proc/cpuinfo | grep -w "cpu MHz" | head -n 1 | awk '{prin
 CURRENTANDMAXSPEEDCPU=" ${LIGHTGREEN}Current:${RESET} (${CPUSPEEDCURRENT}MHz) ${LIGHTGREEN}Max:${RESET} (${CPUSPEEDMAX})"
 
 # Obtains the RAM size and available memory.
-SIZERObtains the RAM size and available memory.AM=$(free --giga -h | sed -n '2p' | awk '{print $2"igs alloted to VM. (" $4 " free)"}')
+SIZERAM=$(free --giga -h | sed -n '2p' | awk '{print $2"igs alloted to VM. (" $4 " free)"}')
 
 # Retrieves the video card make and model.
 MODELVGU=$(grep -A 11 'display' LSHWOUTPUT.txt | grep product | head -n 1 | awk -F': ' '{print $2}')
