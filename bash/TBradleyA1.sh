@@ -34,94 +34,82 @@ RESET='\033[0m' # Reset text formatting and color
 # Enstantiating variable names for script begins here
 #-----------------------------------------------------
 
-# Variable for current user name.
+# Assigns the current username to the 'USERNAME' variable.
 USERNAME=$(whoami)
 
-# Variable for current date, by day of the week, numerical day, month, and year.
+# Saves the current date in this format: Day of the week, Month, Day, Year.
 CURRENTDATE=$(echo "$(date +%A), $(date +%B) $(date +%d), $(date +%+4Y)")
 
-# Variable for current date, by hour, minute, seconds, and AM or PM.
+# Saves the current time in this format: Hour:Minute:Second AM/PM.
 CURRENTTIME=$(echo "$(date +%I):$(date +%M):$(date +%S) $(date +%p)")
 
-# Variable for current host.
+# Stores the current hostname (name for the machine) in the 'HOSTNAME' variable.
 HOSTNAME=$(hostname)
 
-# Variable for current Linux Distrobution with version.
+# Retrieves information about the Linux Distro and version from /etc/os-release.
 DISTROWITHVERSION=$(echo $PRETTY_NAME)
 
-# Current uptime.
+# Captures the current up time duration.
 UPTIME=$(uptime -p | cut -d' ' -f2-)
 
-#cpu: PROCESSOR MAKE AND MODEL.
+# Extracts the processor information.
 CPUINFO=$(cat LSHWOUTPUT.txt | grep CPU | grep product | head -n 1 | awk -F': ' '{print $2}')
 
-# Current and Max Speed of CPU
+# Extracts the processor make and model information.
 CPUSPEEDMAX=$(cat /proc/cpuinfo | grep -w "model name" | head -n 1 | awk '{print $9}')
-CPUSPEEDCURRENT=$(cat /proc/cpuinfo | grep -w "cpu MHz" |head -n 1 | awk '{print $4}')
+CPUSPEEDCURRENT=$(cat /proc/cpuinfo | grep -w "cpu MHz" | head -n 1 | awk '{print $4}')
 CURRENTANDMAXSPEEDCPU=" ${LIGHTGREEN}Current:${RESET} (${CPUSPEEDCURRENT}MHz) ${LIGHTGREEN}Max:${RESET} (${CPUSPEEDMAX})"
 
-# Current size of RAM allotted to VM
-SIZERAM=$(free --giga -h | sed -n '2p' | awk '{print $2"igs alloted to VM. (" $4 " free)"}')
+# Obtains the RAM size and available memory.
+SIZERObtains the RAM size and available memory.AM=$(free --giga -h | sed -n '2p' | awk '{print $2"igs alloted to VM. (" $4 " free)"}')
 
-# Make and model of video card
+# Retrieves the video card make and model.
 MODELVGU=$(grep -A 11 'display' LSHWOUTPUT.txt | grep product | head -n 1 | awk -F': ' '{print $2}')
+# Captures the video card manufacturer.
 MAKEVGU=$(grep -A 11 'display' LSHWOUTPUT.txt | grep vendor| head -n 1 | awk -F': ' '{print $2}')
+# Combines the video card make and model into one variable.
 MAKEMODELVGU="${PRODUCTVGU} ${MAKEVGU}"
 
-# Make, model, and size for all installed disks
+# Gathers information about installed disks' names, models, and sizes.
 MAKEMODELSIZEDISK=$(lsblk -io NAME,MODEL,SIZE | awk 'NF >= 3 {print}')
 
-# Get the list of available disk names from lsblk -io NAME
-AVAILABLEDISKS=$(lsblk -io NAME)
-
-# Initialize a variable to store matched lines
-INSTALLEDDISKS=""
-
-# Loop through the available disks and store matching entries
-for DISKS in $AVAILABLEDISKS; do
-  MATCHEDISK=$(echo "$MAKEMODELSIZEDISK" | grep -w "$DISKS")
-  if [ -n "$MATCHEDISK" ]; then
-    INSTALLEDDISKS+="$MATCHEDISK\n"
-  fi
-done
-
-# Fully qualified domain name
+# Stores the fully qualified domain name (FQDN).
 FQDN=$(hostname -f)
 
-# Lists IP Address for the hostname
-IPHOST=$(host $(hostname) | head -n 1 | awk '{print $NF}')
+# Retrieves the IP address associated with the hostname.
+IPHOST=$(hostname --ip-address)
 
-# Lists IP Adress for the Gateway
-GATEWAYIP=$(ip route | awk '/default/ {print $3}')
+# For storing the gateway IP address.
+GATEWAYIP=$(ip route | awk 'default {print $3}')
 
-# Lists IP Addreses of the DNS Server
+# Grabs the IP addresses of DNS servers.
 DNSIP=$(grep -w 'nameserver' /etc/resolv.conf | awk '{print $2}')
 
-# Make and model of network card
+# Gets the network card description.
 NETCARD=$(awk -F 'description: ' '/description:/ {print $2; exit}' LSHWOUTPUT.txt)
 
-# IP Address in CIDR FORMAT
-IPCIDR=$(ip a | awk '/inet .* brd / {print $2; exit}')
+# Lists the IP addresses on network interfaces in CIDR format.
+IPCIDR=$(ip a | grep 'inet .*' | awk '{print $2}')
 
-# Lists all users currently logged into the system
-USERSLOGGEDIN=$(who -u | awk '{print $1}')
+# Provides a list of currently logged-in users
+USERSLOGGEDIN=$(who -q)
 
-# Shows free space for local filesystems in format: / MOUNTPOINT N
+# Displays free space on local filesystems in the format: / MOUNTPOINT N.
 FREEDISKSPACE=$(df -h --output=source,avail)
 
-# Lists process count
+# Counts the number of running processes.
 PROCESSCOUNT=$(ps -e | wc -l)
 
-# Lists load averages
-LOADAVERAGES=$(uptime | awk -F'[a-zA-Z: ]+' '{print $2, $3, $4}')
+# Presents the load averages from the uptime command.
+LOADAVERAGES=$(uptime | grep -o 'load .*' | cut -d' ' -f3-)
 
 # Lists memory allocation
 MEMORYALLOCATION=$(free -h)
 
-# Lists currently listening network ports
+# Lists currently listening network ports.
 LISTENINGNETWORKPORTS=$(ss -tuln | grep -w LISTEN)
 
-# Lists data from UFW Show
+# Retrieves and displays UFW (Uncomplicated Firewall) rules
 UFWRULES=$(sudo ufw status)
 
 
@@ -171,7 +159,7 @@ ${GREEN}Speed:${RESET} $CURRENTANDMAXSPEEDCPU
 ${GREEN}Ram:${RESET} $SIZERAM
 `#disk(s): MAKE AND MODEL AND SIZE FOR ALL INSTALLED DISKS`
 ${GREEN}Disk(s): ${RESET} 
-$INSTALLEDDISKS
+$MAKEMODELSIZEDISK
 `#Video: MAKE AND MODEL OF VIDEO CARD`
 ${GREEN}Video Card Make:${RESET} $MAKEVGU
 `#Video: MAKE AND MODEL OF VIDEO CARD`
@@ -195,7 +183,8 @@ ${GREEN}DNS Server:${RESET} $DNSIP
 `# Make and model of network card`
 ${GREEN}Interface Name:${RESET} $NETCARD
 `# IP Address in CIDR FORMAT`
-${GREEN}IP Address:${RESET} $IPCIDR
+${GREEN}IP Address(es) in CIDR Format:${RESET} 
+$IPCIDR
 
 
 ------------- 
@@ -223,6 +212,6 @@ ${GREEN}UFW Rules:${RESET} $UFWRULES
 
 "
 
-#sudo rm LSHWOUTPUT.txt
+sudo rm LSHWOUTPUT.txt
 
 #End of File
