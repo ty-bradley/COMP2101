@@ -5,6 +5,8 @@
 # Professor: Dennis Simpson
 # Date: October 4th, 2023
 
+# "The network report has a few issues and the listening ports are incomplete, otherwise well done."
+
 # The purpose of this script is to display some important identity information about a computer so that you can see that information quickly and concisely, without having to memorize mutliple commands or remember multiple command options.
 
 # Run the source command to access distribution name and version for use later in the script.
