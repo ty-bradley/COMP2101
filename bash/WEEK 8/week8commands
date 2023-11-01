@@ -1,3 +1,12 @@
 #!/bin/bash
 
-#
+# strings /usr/bin/passwd | grep passwd
+
+# getent: lookup hostname/ address and see what comes back.
+
+# chown -R for recursive. requires sudo for changing file owners.
+
+# find . -type d - exec chmod 755 {} +
+  # "{} +" substitutes what the find command gets and runs it on the same line.
+    # You can run "find . -type d - exec chmod 755 \;" to escape and run it 10 times if you need to instead of everything being ran at once.
+
