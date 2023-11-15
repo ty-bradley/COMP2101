@@ -100,8 +100,9 @@ done
 
 echo "Internet Interface: $FREEINTERFACE"
 
-echo "Internet Interface:$DEFAULTROUTEINTERFACE
+sed -i "/$FREEINTERFACE/, /^\s*e/ {/$FREEINTERFACEs/^/#/; /^\s*e/! s/^/#/}" /etc/netplan/50-cloud-init.yaml
 
+cat /etc/netplan
 
 # while ! lxc exec "$container" -- systemctl is-active --quiet ssh 2>/dev/null; do sleep 1; done
 
