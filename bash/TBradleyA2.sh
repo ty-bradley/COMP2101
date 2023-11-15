@@ -100,9 +100,20 @@ done
 
 echo "Internet Interface: $FREEINTERFACE"
 
-sed -i "/$FREEINTERFACE/, /^\s*e/ {/$FREEINTERFACEs/^/#/; /^\s*e/! s/^/#/}" /etc/netplan/50-cloud-init.yaml
+sed -i "/$FREEINTERFACE/, /^\s*e/ {/$FREEINTERFACE/ s/^/#/; /^\s*e/! s/^/#/}" /etc/netplan/50-cloud-init.yaml
 
-cat /etc/netplan
+cat > /etc/netplan/01-static-int.yaml <<EOF
+network:
+    version: 2
+    ethernets:
+        $FREEINTERFACE:
+            addresses: [192.168.16.21/24]
+            routes:
+                via: 192.168.16.1
+            nameservers:
+                addresses: [192.168.16.1]
+                search: [home.arpa, localdomain]
+EOF
 
 # while ! lxc exec "$container" -- systemctl is-active --quiet ssh 2>/dev/null; do sleep 1; done
 
