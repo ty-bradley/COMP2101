@@ -120,6 +120,8 @@ USERNAMES=("dennis" "aubrey" "captain" "snibbles" "brownie" "scooter" "sandy" "p
 # Enstantiating variable names for script ends here
 #-----------------------------------------------------
 
+#Begin script template for user
+
 echo -e "
 ---------------------------------------------
 
@@ -148,6 +150,7 @@ ${CYAN}NETWORK CONFIGURATION${RESET}
 ------------------------------------"
 
 # Finds an interface that is not used as the default route, when it finds one it exits the loop.
+# When this runs unless there are no interfaces and just the loopback interface, it should always find an interface to use that isn't the default route interface.
 for INTERFACE in "${ALLINTERFACES[@]}"; do
     if [[ "$INTERFACE" != "$DEFAULTROUTEINTERFACE" ]]; then
         FREEINTERFACE="$INTERFACE"
@@ -162,7 +165,13 @@ ${GREEN}Configured Interface:${RESET} $FREEINTERFACE"
 # Check if the entry associated with FREEINTERFACE is already commented out in netplan configuration.
 for NETPLANFILE in /etc/netplan/*.yaml; do
     if ! grep -q "^#" "$NETPLANFILE"; then
-        # Comment out the entry by using sed to comment out the range starting from the chosen interface to the first occurrence of 'e' at the beginning of a line or following whitespace. Also specifies to comment the first line and avoid commenting the last line.
+        # Dear Dennis,
+        # This took some time to get working but what I have here seems to work, I tried using sed to comment out entries starting from the specified interface (which is eth1),
+        # Then from there it will add a hastag to the beginning of each line after until it finds a line with an indent (or whitespace), and after that indent starts with an e.
+        # I figured that the interface we should use would be eth or ens and no other entry within netplan starts with e between my specifications.
+        # To get it to function like intended I have to specify to specifically comment out lines that start with the interface (which is why it comments twice, without this it doesn't seem to work at all weirdly enough.)
+        # I also have to specify that I specifically don't want to comment on the line where it finds the indent with the e after it.
+        # I think I over complicated but my solution seems to work as intended.
         sed -i "/$FREEINTERFACE/, /^\s*e/ {/$FREEINTERFACE/ s/^/#/; /^\s*e/! s/^/#/}" "$NETPLANFILE"
     fi
 done
@@ -188,7 +197,7 @@ ${GREEN}Created Netplan file for static configuration:${RESET} /etc/netplan/01-s
 # Check if an entry exists in /etc/hosts for the static interface's IP.
 if grep -q "$STATICINTERFACEIP" /etc/hosts; then
     
-    # If the entry exists, we update it and give it a new host name.
+    # If the entry exists within, we update it and give it a new host name.
     
     sed -i "s/^\(192.168.16.21\/24\s\+\).*$/\1static-interface/" /etc/hosts
     
@@ -220,42 +229,42 @@ ${CYAN}SOFTWARE CONFIGURATION${RESET}
 if ! service ssh status &> /dev/null; then
     echo -e "
 ${RED}OpenSSH-server service not found; Installing.${RESET}"
-    sudo apt install -y openssh-server
+    sudo apt install -y openssh-server &> /dev/null
 else
- # OpenSSH server service is already running
+ # If OpenSSH server service is already running, display that message to the user.
     echo -e "
-${BLUE}OpenSSH server service already installed; Continuing.${RESET}"
+${BLUE}OpenSSH server service already installed; Restarting..${RESET}"
 fi
 
-# Configure OpenSSH for key-based authentication and disable password authentication
+# Configure OpenSSH for key-based authentication and disable password authentication, then restart the service.
 sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
-sudo systemctl restart ssh
+sudo systemctl restart ssh &> /dev/null
 
 # Check if Apache2 web server service is running
 if ! service apache2 status &> /dev/null; then
     echo -e "
 ${RED}Apache2 web server service not found; Installing.${RESET}"
-    sudo apt install -y apache2
+    sudo apt install -y apache2 &> /dev/null
 else
- # Apache2 web server service is already running
+ # If Apache2 web server service is already running, display that message to the user.
     echo -e "
-${BLUE}Apache2 web server service already installed; Continuing.${RESET}"
+${BLUE}Apache2 web server service already installed; Restarting..${RESET}"
 fi
 
 # Check if Squid web proxy service is running
 if ! service squid status &> /dev/null; then
     echo -e "
 ${RED}Squid web proxy service not found; Installing.${RESET}"
-    sudo apt install -y squid
+    sudo apt install -y squid &> /dev/null
 else
- # Squid web proxy service is already running
+ # If Squid web proxy service is already running, display that message to the user.
     echo -e "
-${BLUE}Squid web proxy service already installed; Continuing. ${RESET}"
+${BLUE}Squid web proxy service already installed; Restarting.. ${RESET}"
 fi
 
-# Configure Squid to listen on port 3128
-sudo sed -i 's/http_port 3128/http_port 3128/' /etc/squid/squid.conf
-sudo systemctl restart squid
+# Configure Squid to listen on port 3128, then restart the service.
+sudo sed -i 's/http_port 3128/http_port 3128/' /etc/squid/squid.conf &> /dev/null
+sudo systemctl restart squid &> /dev/null
 
 
 ## SECTION 3: FIREWALL RULES AND PORTS
@@ -268,27 +277,32 @@ ${CYAN}FIREWALL CONFIGURATION${RESET}
 ------------------------------------
 "
 
-# Enable UFW (Uncomplicated Firewall)
+# Enable UFW (Uncomplicated Firewall) and if already running display a message for the user.
+
 UFWMESSAGE=$(sudo ufw --force enable)
 echo -e "
 ${GREEN}Enabling UFW (Uncomplicated Firewall):${RESET} $UFWMESSAGE"
 
-# Allow SSH on port 22
+# Allow SSH on port 22: Displays a message if the rule is already active.
+
 UFWMESSAGE=$(sudo ufw allow 22)
 echo -e "
 ${GREEN}Enabling UFW (Uncomplicated Firewall):${RESET} $UFWMESSAGE"
 
-# Allow HTTP on port 80
+# Allow HTTP on port 80: Displays a message if the rule is already active.
+
 UFWMESSAGE=$(sudo ufw allow 80)
 echo -e "
 ${GREEN}Enabling UFW (Uncomplicated Firewall):${RESET} $UFWMESSAGE"
 
-# Allow HTTPS on port 443
+# Allow HTTPS on port 443: Displays a message if the rule is already active.
+
 UFWMESSAGE=$(sudo ufw allow 443)
 echo -e "
 ${GREEN}Enabling UFW (Uncomplicated Firewall):${RESET} $UFWMESSAGE"
 
-# Allow web proxy on port 3128
+# Allow web proxy on port 3128: Displays a message if the rule is already active.
+
 UFWMESSAGE=$(sudo ufw allow 3128)
 echo -e "
 ${GREEN}Enabling UFW (Uncomplicated Firewall):${RESET} $UFWMESSAGE"
@@ -303,7 +317,8 @@ ${CYAN}USER CONFIGURATION${RESET}
 ------------------------------------
 "
 
-# Create users with home directory and bash as default shell
+# Creates users with home directory and bash as default shell
+
 for USERNAME in "${USERNAMES[@]}"; do
     if id "$USERNAME" &>/dev/null; then
         echo -e "
@@ -315,32 +330,45 @@ ${YELLOW}User already exists:${RESET} $USERNAME"
 done
 
 # SSH key configuration
+
 for USERNAME in "${USERNAMES[@]}"; do
+    
     # Generate SSH keys (RSA and Ed25519)
+    
     echo -e "
 ${GREEN}Generating SSH key:${RESET}"
     echo -e "y\n" | sudo -u "$USERNAME" ssh-keygen -t rsa -b 2048 -f "/home/$USERNAME/.ssh/id_rsa" -N "" > /dev/null
     echo -e "y\n" | sudo -u "$USERNAME" ssh-keygen -t ed25519 -f "/home/$USERNAME/.ssh/id_ed25519" -N "" > /dev/null
 
-# Check if the SSH key file already exists and print a message
+# Check if the SSH key directory exists
+if [ -d "/home/$USERNAME/.ssh" ]; then
+    # Check if the SSH key files already exist and print a message
     if [ -f "/home/$USERNAME/.ssh/id_rsa" ] || [ -f "/home/$USERNAME/.ssh/id_ed25519" ]; then
         echo -e "${YELLOW}SSH keys already exist for:${RESET} $USERNAME. ${RED}Overwriting...${RESET}"
     fi
+else
+    # This is the first time keys are being generated
+    echo -e "${GREEN}Generating SSH keys for:${RESET} $USERNAME"
+fi
 
-# Add the provided public key and grant sudo access to the user "dennis" to authorized_keys for "dennis"
+    # Add the provided public key and grant sudo access to dennis by appending to authorized_keys.
+    
     if [ "$USERNAME" == "dennis" ]; then
         sudo usermod -aG sudo dennis
         echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4rT3vTt99Ox5kndS4HmgTrKBT8SKzhK4rhGkEVGlCI student@generic-vm" | sudo -u dennis tee -a "/home/dennis/.ssh/authorized_keys" > /dev/null
     fi
     
     # Add the generated public keys to authorized_keys
+    
     cat "/home/$USERNAME/.ssh/id_rsa.pub" >> "/home/$USERNAME/.ssh/authorized_keys"
     cat "/home/$USERNAME/.ssh/id_ed25519.pub" >> "/home/$USERNAME/.ssh/authorized_keys"
 
-    # Set correct permissions for the .ssh directory and authorized_keys file
+    # Set permissions for the .ssh directory and authorized_keys file.
+    
     chmod 700 "/home/$USERNAME/.ssh"
     chmod 600 "/home/$USERNAME/.ssh/authorized_keys"
 
-    # Optional: Set ownership to the user
+    # Set ownership for the user so that they may have access to the key folders.
+    
     chown -R "$USERNAME:$USERNAME" "/home/$USERNAME/.ssh"
 done
