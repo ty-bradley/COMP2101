@@ -199,7 +199,7 @@ if grep -q "$STATICINTERFACEIP" /etc/hosts; then
     
     # If the entry exists within, we update it and give it a new host name.
     
-    sed -i "s/^\(192.168.16.21\/24\s\+\).*$/\1static-interface/" /etc/hosts
+    sed -i "s/^\(192.168.16.21\/24\s\+\).*$/\1generic-host/" /etc/hosts
     
     ETCHOSTSENTRY=$(cat /etc/hosts | grep $STATICINTERFACEIP)
     
@@ -208,13 +208,24 @@ ${GREEN}Updated entry to /etc/hosts:${RESET} $ETCHOSTSENTRY"
 else
     
     # Entry doesn't exist, add it to the file with a host name.
-    echo "$STATICINTERFACEIP static-interface" >> /etc/hosts
+    echo "$STATICINTERFACEIP generic-host" >> /etc/hosts
     
     ETCHOSTSENTRY=$(cat /etc/hosts | grep $STATICINTERFACEIP)
     
     echo -e "
 ${GREEN}Added entry to /etc/hosts:${RESET} $ETCHOSTSENTRY"
 fi
+
+
+# Set the hostname to static-interface in /etc/hostname
+echo "generic-host" > /etc/hostname
+
+# Update the current hostname
+hostnamectl set-hostname generic-host
+
+# Display the updated hostname
+echo -e "
+${GREEN}Updated hostname to:${RESET} generic-host"
 
 ## SECTION 2: INSTALLING SOFTWARE
 
