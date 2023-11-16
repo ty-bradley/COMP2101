@@ -63,7 +63,7 @@
 
 
 
-# Define color variables
+# Define color variables to be used for formatting.
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
@@ -81,16 +81,73 @@ RESET='\033[0m' # Reset text formatting and color
 # echo -e "${GREEN}This is green text.${RESET}"
 # echo -e "${YELLOW}This is yellow text.${RESET}"
 
-echo -e "${RED}Hello!${RESET}"
 
 
-ls /etc/netplan | sort | wc -l
+# Enstantiating variable names for script begins here
+#-----------------------------------------------------
 
+# Assigns the current username to the 'USERNAME' variable.
+USERNAME=$(whoami)
+
+# Saves the current date in this format: Day of the week, Month, Day, Year.
+CURRENTDATE=$(echo "$(date +%A), $(date +%B) $(date +%d), $(date +%+4Y)")
+
+# Saves the current time in this format: Hour:Minute:Second AM/PM.
+CURRENTTIME=$(echo "$(date +%I):$(date +%M):$(date +%S) $(date +%p)")
+
+# Defines the static IP address for a specific interface.
+STATICINTERFACEIP="192.168.16.21/24"
+
+# Retrieves the default route interface from the routing table.
 DEFAULTROUTEINTERFACE=$(ip route | grep default | awk '{print $5}')
 
+# Lists all network interfaces on the system.
 ALLINTERFACES=($(ls /sys/class/net/))
 
+# Stores the name of the interface that is not the default route.
 FREEINTERFACE=""
+
+# Retrieves the hostname associated with the static IP from /etc/hosts.
+STATICHOSTNAME=$(grep "$STATICINTERFACEIP" /etc/hosts | awk '{print $2}')
+
+# Takes output from ufw commands and stores them. Used to format for user readability.
+UFWMESSAGE=""
+
+# # User configuration: List of usernames for account creation.
+USERNAMES=("dennis" "aubrey" "captain" "snibbles" "brownie" "scooter" "sandy" "perrier" "cindy" "tiger" "yoda")
+
+
+# Enstantiating variable names for script ends here
+#-----------------------------------------------------
+
+echo -e "
+---------------------------------------------
+
+    ${RED}System Modification Script${RESET}
+
+---------------------------------------------
+
+${YELLOW}Report Generation Information${RESET}
+
+----------------------------------
+${YELLOW}User${RESET}: $USERNAME
+----------------------------------
+${YELLOW}Date${RESET}: $CURRENTDATE
+----------------------------------
+${YELLOW}Time${RESET}: $CURRENTTIME
+----------------------------------
+"
+
+## SECTION 1: INTERNET INTERFACES AND NETPLAN.
+
+echo -e "
+------------------------------------
+
+${CYAN}NETWORK CONFIGURATION${RESET}
+
+------------------------------------"
+
+# Finds an interface that is not used as the default route, when it finds one it exits the loop.
 for INTERFACE in "${ALLINTERFACES[@]}"; do
     if [[ "$INTERFACE" != "$DEFAULTROUTEINTERFACE" ]]; then
         FREEINTERFACE="$INTERFACE"
@@ -98,10 +155,19 @@ for INTERFACE in "${ALLINTERFACES[@]}"; do
     fi
 done
 
-echo "Internet Interface: $FREEINTERFACE"
+# Displays the interface chosen for the static configuration.
+echo -e "
+${GREEN}Configured Interface:${RESET} $FREEINTERFACE"
 
-sed -i "/$FREEINTERFACE/, /^\s*e/ {/$FREEINTERFACE/ s/^/#/; /^\s*e/! s/^/#/}" /etc/netplan/50-cloud-init.yaml
+# Check if the entry associated with FREEINTERFACE is already commented out in netplan configuration.
+for NETPLANFILE in /etc/netplan/*.yaml; do
+    if ! grep -q "^#" "$NETPLANFILE"; then
+        # Comment out the entry by using sed to comment out the range starting from the chosen interface to the first occurrence of 'e' at the beginning of a line or following whitespace. Also specifies to comment the first line and avoid commenting the last line.
+        sed -i "/$FREEINTERFACE/, /^\s*e/ {/$FREEINTERFACE/ s/^/#/; /^\s*e/! s/^/#/}" "$NETPLANFILE"
+    fi
+done
 
+# After commenting out information about the interface in other netplan files, we go about creating a Netplan configuration file for static IP
 cat > /etc/netplan/01-static-int.yaml <<EOF
 network:
     version: 2
@@ -115,20 +181,166 @@ network:
                 search: [home.arpa, localdomain]
 EOF
 
-# while ! lxc exec "$container" -- systemctl is-active --quiet ssh 2>/dev/null; do sleep 1; done
+# Displaying a message about the created Netplan file and showing the name and file location for the user to inspect.
+echo -e "
+${GREEN}Created Netplan file for static configuration:${RESET} /etc/netplan/01-static-int.yaml"
 
-#     lxc exec "$container" -- sh -c "cat > /etc/netplan/50-cloud-init.yaml <<EOF
-# network:
-#     version: 2
-#     ethernets:
-#         eth0:
-#             addresses: [$containerlanip/24]
-#             routes:
-#               - to: default
-#                 via: $lannetnum.2
-#             nameservers:
-#                 addresses: [$lannetnum.2]
-#                 search: [home.arpa, localdomain]
-#         eth1:
-#             addresses: [$containermgmtip/24]
-# EOF
+# Check if an entry exists in /etc/hosts for the static interface's IP.
+if grep -q "$STATICINTERFACEIP" /etc/hosts; then
+    
+    # If the entry exists, we update it and give it a new host name.
+    
+    sed -i "s/^\(192.168.16.21\/24\s\+\).*$/\1static-interface/" /etc/hosts
+    
+    ETCHOSTSENTRY=$(cat /etc/hosts | grep $STATICINTERFACEIP)
+    
+    echo -e "
+${GREEN}Updated entry to /etc/hosts:${RESET} $ETCHOSTSENTRY"
+else
+    
+    # Entry doesn't exist, add it to the file with a host name.
+    echo "$STATICINTERFACEIP static-interface" >> /etc/hosts
+    
+    ETCHOSTSENTRY=$(cat /etc/hosts | grep $STATICINTERFACEIP)
+    
+    echo -e "
+${GREEN}Added entry to /etc/hosts:${RESET} $ETCHOSTSENTRY"
+fi
+
+## SECTION 2: INSTALLING SOFTWARE
+
+echo -e "
+------------------------------------
+
+${CYAN}SOFTWARE CONFIGURATION${RESET}
+
+------------------------------------"
+
+# Check if openssh-server service is running
+if ! service ssh status &> /dev/null; then
+    echo -e "
+${RED}OpenSSH-server service not found; Installing.${RESET}"
+    sudo apt install -y openssh-server
+else
+ # OpenSSH server service is already running
+    echo -e "
+${BLUE}OpenSSH server service already installed; Continuing.${RESET}"
+fi
+
+# Configure OpenSSH for key-based authentication and disable password authentication
+sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+sudo systemctl restart ssh
+
+# Check if Apache2 web server service is running
+if ! service apache2 status &> /dev/null; then
+    echo -e "
+${RED}Apache2 web server service not found; Installing.${RESET}"
+    sudo apt install -y apache2
+else
+ # Apache2 web server service is already running
+    echo -e "
+${BLUE}Apache2 web server service already installed; Continuing.${RESET}"
+fi
+
+# Check if Squid web proxy service is running
+if ! service squid status &> /dev/null; then
+    echo -e "
+${RED}Squid web proxy service not found; Installing.${RESET}"
+    sudo apt install -y squid
+else
+ # Squid web proxy service is already running
+    echo -e "
+${BLUE}Squid web proxy service already installed; Continuing. ${RESET}"
+fi
+
+# Configure Squid to listen on port 3128
+sudo sed -i 's/http_port 3128/http_port 3128/' /etc/squid/squid.conf
+sudo systemctl restart squid
+
+
+## SECTION 3: FIREWALL RULES AND PORTS
+
+echo -e "
+------------------------------------
+
+${CYAN}FIREWALL CONFIGURATION${RESET}
+
+------------------------------------
+"
+
+# Enable UFW (Uncomplicated Firewall)
+UFWMESSAGE=$(sudo ufw --force enable)
+echo -e "
+${GREEN}Enabling UFW (Uncomplicated Firewall):${RESET} $UFWMESSAGE"
+
+# Allow SSH on port 22
+UFWMESSAGE=$(sudo ufw allow 22)
+echo -e "
+${GREEN}Enabling UFW (Uncomplicated Firewall):${RESET} $UFWMESSAGE"
+
+# Allow HTTP on port 80
+UFWMESSAGE=$(sudo ufw allow 80)
+echo -e "
+${GREEN}Enabling UFW (Uncomplicated Firewall):${RESET} $UFWMESSAGE"
+
+# Allow HTTPS on port 443
+UFWMESSAGE=$(sudo ufw allow 443)
+echo -e "
+${GREEN}Enabling UFW (Uncomplicated Firewall):${RESET} $UFWMESSAGE"
+
+# Allow web proxy on port 3128
+UFWMESSAGE=$(sudo ufw allow 3128)
+echo -e "
+${GREEN}Enabling UFW (Uncomplicated Firewall):${RESET} $UFWMESSAGE"
+
+## SECTION 4: USER ACCOUNTS AND SSH SETUP
+
+echo -e "
+------------------------------------
+
+${CYAN}USER CONFIGURATION${RESET}
+
+------------------------------------
+"
+
+# Create users with home directory and bash as default shell
+for USERNAME in "${USERNAMES[@]}"; do
+    if id "$USERNAME" &>/dev/null; then
+        echo -e "
+${YELLOW}User already exists:${RESET} $USERNAME"
+    else
+        sudo useradd -m -s /bin/bash "$USERNAME" > /dev/null 2>&1
+        echo -e "${GREEN}Creating user:${RESET} $USERNAME"
+    fi
+done
+
+# SSH key configuration
+for USERNAME in "${USERNAMES[@]}"; do
+    # Generate SSH keys (RSA and Ed25519)
+    echo -e "
+${GREEN}Generating SSH key:${RESET}"
+    echo -e "y\n" | sudo -u "$USERNAME" ssh-keygen -t rsa -b 2048 -f "/home/$USERNAME/.ssh/id_rsa" -N "" > /dev/null
+    echo -e "y\n" | sudo -u "$USERNAME" ssh-keygen -t ed25519 -f "/home/$USERNAME/.ssh/id_ed25519" -N "" > /dev/null
+
+# Check if the SSH key file already exists and print a message
+    if [ -f "/home/$USERNAME/.ssh/id_rsa" ] || [ -f "/home/$USERNAME/.ssh/id_ed25519" ]; then
+        echo -e "${YELLOW}SSH keys already exist for:${RESET} $USERNAME. ${RED}Overwriting...${RESET}"
+    fi
+
+# Add the provided public key and grant sudo access to the user "dennis" to authorized_keys for "dennis"
+    if [ "$USERNAME" == "dennis" ]; then
+        sudo usermod -aG sudo dennis
+        echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4rT3vTt99Ox5kndS4HmgTrKBT8SKzhK4rhGkEVGlCI student@generic-vm" | sudo -u dennis tee -a "/home/dennis/.ssh/authorized_keys" > /dev/null
+    fi
+    
+    # Add the generated public keys to authorized_keys
+    cat "/home/$USERNAME/.ssh/id_rsa.pub" >> "/home/$USERNAME/.ssh/authorized_keys"
+    cat "/home/$USERNAME/.ssh/id_ed25519.pub" >> "/home/$USERNAME/.ssh/authorized_keys"
+
+    # Set correct permissions for the .ssh directory and authorized_keys file
+    chmod 700 "/home/$USERNAME/.ssh"
+    chmod 600 "/home/$USERNAME/.ssh/authorized_keys"
+
+    # Optional: Set ownership to the user
+    chown -R "$USERNAME:$USERNAME" "/home/$USERNAME/.ssh"
+done
