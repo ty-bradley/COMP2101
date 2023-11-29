@@ -344,35 +344,36 @@ done
 
 for USERNAME in "${USERNAMES[@]}"; do
     
-    # Generate SSH keys (RSA and Ed25519)
-    
-    echo -e "
-${GREEN}Generating SSH key:${RESET}"
-    echo -e "y\n" | sudo -u "$USERNAME" ssh-keygen -t rsa -b 2048 -f "/home/$USERNAME/.ssh/id_rsa" -N "" > /dev/null
-    echo -e "y\n" | sudo -u "$USERNAME" ssh-keygen -t ed25519 -f "/home/$USERNAME/.ssh/id_ed25519" -N "" > /dev/null
-
 # Check if the SSH key directory exists
-if [ -d "/home/$USERNAME/.ssh" ]; then
-    # Check if the SSH key files already exist and print a message
-    if [ -f "/home/$USERNAME/.ssh/id_rsa" ] || [ -f "/home/$USERNAME/.ssh/id_ed25519" ]; then
-        echo -e "${YELLOW}SSH keys already exist for:${RESET} $USERNAME. ${RED}Overwriting...${RESET}"
+    if [ -d "/home/$USERNAME/.ssh" ]; then
+        # Check if the SSH key files already exist and print a message
+        if [ -f "/home/$USERNAME/.ssh/id_rsa" ] || [ -f "/home/$USERNAME/.ssh/id_ed25519" ]; then
+            echo -e "${YELLOW}SSH keys already exist for:${RESET} $USERNAME."
+        else
+            # This is the first time keys are being generated
+            echo -e "${GREEN}Generating SSH keys for:${RESET} $USERNAME"
+            # Generate SSH keys (RSA and Ed25519)
+            echo -e "y\n" | sudo -u "$USERNAME" ssh-keygen -t rsa -b 2048 -f "/home/$USERNAME/.ssh/id_rsa" -N "" > /dev/null
+            echo -e "y\n" | sudo -u "$USERNAME" ssh-keygen -t ed25519 -f "/home/$USERNAME/.ssh/id_ed25519" -N "" > /dev/null
+        fi
     fi
-else
-    # This is the first time keys are being generated
-    echo -e "${GREEN}Generating SSH keys for:${RESET} $USERNAME"
-fi
 
     # Add the provided public key and grant sudo access to dennis by appending to authorized_keys.
     
     if [ "$USERNAME" == "dennis" ] && ! grep -q "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4rT3vTt99Ox5kndS4HmgTrKBT8SKzhK4rhGkEVGlCI student@generic-vm" "/home/dennis/.ssh/authorized_keys"; then
-    sudo usermod -aG sudo dennis
-    echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4rT3vTt99Ox5kndS4HmgTrKBT8SKzhK4rhGkEVGlCI student@generic-vm" | sudo -u dennis tee -a "/home/dennis/.ssh/authorized_keys" > /dev/null
-fi
+        sudo usermod -aG sudo dennis
+        echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4rT3vTt99Ox5kndS4HmgTrKBT8SKzhK4rhGkEVGlCI student@generic-vm" | sudo -u dennis tee -a "/home/dennis/.ssh/authorized_keys" > /dev/null
+    fi
     
-    # Add the generated public keys to authorized_keys
+     # Add the generated public keys to authorized_keys if they don't exist
     
-    cat "/home/$USERNAME/.ssh/id_rsa.pub" >> "/home/$USERNAME/.ssh/authorized_keys"
-    cat "/home/$USERNAME/.ssh/id_ed25519.pub" >> "/home/$USERNAME/.ssh/authorized_keys"
+    if ! grep -qF "$(cat "/home/$USERNAME/.ssh/id_rsa.pub")" "/home/$USERNAME/.ssh/authorized_keys"; then
+        cat "/home/$USERNAME/.ssh/id_rsa.pub" >> "/home/$USERNAME/.ssh/authorized_keys"
+    fi
+
+    if ! grep -qF "$(cat "/home/$USERNAME/.ssh/id_ed25519.pub")" "/home/$USERNAME/.ssh/authorized_keys"; then
+        cat "/home/$USERNAME/.ssh/id_ed25519.pub" >> "/home/$USERNAME/.ssh/authorized_keys"
+    fi
 
     # Set permissions for the .ssh directory and authorized_keys file.
     

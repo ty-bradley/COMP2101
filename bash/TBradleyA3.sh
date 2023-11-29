@@ -94,37 +94,33 @@ ${YELLOW}Time${RESET}: $CURRENTTIME
 
 # target1-mgmt (172.16.1.10):
 
-    # change system name from target1 to loghost (change both hostname and /etc/hosts files)
-
 # Set the hostname to loghost in /etc/hostname
 ssh remoteadmin@target1-mgmt echo "loghost" > /etc/hostname
 
 # Update the current hostname on target1
+echo -e "\n${GREEN}Updating hostname on target1...${RESET}"
 ssh remoteadmin@target1-mgmt hostnamectl set-hostname loghost
 
 # Display the updated hostname on target1
 echo -e "
 ${GREEN}Updated hostname on target1 to:${RESET} loghost"
 
-    # change ip address from host 10 to host 3 on the lan
-
-
 # Update the ip address for target1 from host 10 to host 3 on the LAN.
-#ssh remoteadmin@target1-mgmt 
-
-
-    # Add a machine named webhost to the /etc/hosts file as host 4 on the lan
-
+ssh remoteadmin@target1-mgmt ip addr change 172.16.1.3/24 dev eth0
 
 # Updated /etc/hosts file on loghost with information regarding webhost so that it is host 4 on the LAN.
-#ssh remoteadmin@target2-mgmt 
+ssh remoteadmin@target1-mgmt echo '172.16.1.4 webhost' >> /etc/hosts
 
-    # install ufw if necessary and allow connections to port 514/udp from the mgmt network
-    # configure rsyslog to listen for UDP connections (look in /etc/rsyslog.conf for the configuration settings lines that say imudp, and uncomment both of them), then restart the rsyslog service using systemctl restart rsyslog
-    
+# install ufw if necessary and allow connections to port 514/udp from the mgmt network
+ssh remoteadmin@target1-mgmt sudo apt-get update && sudo apt-get install -y ufw
+ssh remoteadmin@target1-mgmt sudo ufw allow from 172.16.1.0/24 to any port 514 proto udp
+
+# configure rsyslog to listen for UDP connections (look in /etc/rsyslog.conf for the configuration settings lines that say imudp, and uncomment both of them), then restart the rsyslog service using systemctl restart rsyslog
+ssh remoteadmin@target1-mgmt sudo sed -i 's/^#module(load="imudp")/module(load="imudp")/' /etc/rsyslog.conf
+ssh remoteadmin@target1-mgmt sudo sed -i 's/^#input(type="imudp" port="514")/input(type="imudp" port="514")/' /etc/rsyslog.conf
+ssh remoteadmin@target1-mgmt sudo systemctl restart rsyslog
+
 # target2-mgmt (172.16.1.11):
-
-    # change system name from target2 to webhost (change both hostname and /etc/hosts files)
 
 # Set the hostname to webhost in /etc/hostname
 ssh remoteadmin@target2-mgmt echo "webhost" > /etc/hostname
@@ -136,128 +132,28 @@ ssh remoteadmin@target2-mgmt hostnamectl set-hostname webhost
 echo -e "
 ${GREEN}Updated hostname on target2 to:${RESET} webhost"
 
-    # change ip address from host 11 to host 4 on the lan
-
 # Update the ip address for target2 from host 11 to host 4 on the LAN.
-#ssh remoteadmin@target2-mgmt # target1-mgmt (172.16.1.10):
+ssh remoteadmin@target2-mgmt ip addr change 172.16.1.4/24 dev eth0
 
-    # change system name from target1 to loghost (change both hostname and /etc/hosts files)
+# Add a machine named loghost to the /etc/hosts file as host 3 on the lan
+ssh remoteadmin@target2-mgmt echo '172.16.1.3 loghost' >> /etc/hosts
 
-# Set the hostname to loghost in /etc/hostname
-ssh remoteadmin@target1-mgmt echo "loghost" > /etc/hostname
+# Install ufw if necessary and allow connections to port 80/tcp from anywhere
+ssh remoteadmin@target2-mgmt sudo apt-get update && sudo apt-get install -y ufw
+ssh remoteadmin@target2-mgmt sudo ufw allow 80/tcp
 
-# Update the current hostname on target1
-ssh remoteadmin@target1-mgmt hostnamectl set-hostname loghost
+# Install apache2 in its default configuration
+ssh remoteadmin@target2-mgmt sudo apt-get install -y apache2
 
-# Display the updated hostname on target1
-echo -e "
-${GREEN}Updated hostname on target1 to:${RESET} loghost"
-
-    # change ip address from host 10 to host 3 on the lan
-
-
-# Update the ip address for target1 from host 10 to host 3 on the LAN.
-#ssh remoteadmin@target1-mgmt 
+# Configure rsyslog on webhost to send logs to loghost
+ssh remoteadmin@target2-mgmt sudo sed -i 's/^#module(load="imudp")/module(load="imudp")/' /etc/rsyslog.conf
+ssh remoteadmin@target2-mgmt sudo sed -i 's/^#input(type="imudp" port="514")/input(type="imudp" port="514")/' /etc/rsyslog.conf
+ssh remoteadmin@target2-mgmt sudo systemctl restart rsyslog
 
 
-    # Add a machine named webhost to the /etc/hosts file as host 4 on the lan
+# Update the NMS /etc/hosts file to have the name loghost with the correct IP address and the name webhost with the correct IP address.
+echo '172.16.1.3 loghost' >> /etc/hosts
+echo '172.16.1.4 webhost' >> /etc/hosts
 
-
-# Updated /etc/hosts file on loghost with information regarding webhost so that it is host 4 on the LAN.
-#ssh remoteadmin@target2-mgmt 
-
-    # install ufw if necessary and allow connections to port 514/udp from the mgmt network
-    # configure rsyslog to listen for UDP connections (look in /etc/rsyslog.conf for the configuration settings lines that say imudp, and uncomment both of them), then restart the rsyslog service using systemctl restart rsyslog
-    
-# target2-mgmt (172.16.1.11):
-
-    # change system name from target2 to webhost (change both hostname and /etc/hosts files)
-
-# Set the hostname to webhost in /etc/hostname
-ssh remoteadmin@target2-mgmt echo "webhost" > /etc/hostname
-
-# Update the current hostname on target2
-ssh remoteadmin@target2-mgmt hostnamectl set-hostname webhost
-
-# Display the updated hostname on target2
-echo -e "
-${GREEN}Updated hostname on target2 to:${RESET} webhost"
-
-    # change ip address from host 11 to host 4 on the lan
-# target1-mgmt (172.16.1.10):
-
-    # change system name from target1 to loghost (change both hostname and /etc/hosts files)
-
-# Set the hostname to loghost in /etc/hostname
-ssh remoteadmin@target1-mgmt echo "loghost" > /etc/hostname
-
-# Update the current hostname on target1
-ssh remoteadmin@target1-mgmt hostnamectl set-hostname loghost
-
-# Display the updated hostname on target1
-echo -e "
-${GREEN}Updated hostname on target1 to:${RESET} loghost"
-
-    # change ip address from host 10 to host 3 on the lan
-
-
-# Update the ip address for target1 from host 10 to host 3 on the LAN.
-#ssh remoteadmin@target1-mgmt 
-
-
-    # Add a machine named webhost to the /etc/hosts file as host 4 on the lan
-
-
-# Updated /etc/hosts file on loghost with information regarding webhost so that it is host 4 on the LAN.
-#ssh remoteadmin@target2-mgmt 
-
-    # install ufw if necessary and allow connections to port 514/udp from the mgmt network
-    # configure rsyslog to listen for UDP connections (look in /etc/rsyslog.conf for the configuration settings lines that say imudp, and uncomment both of them), then restart the rsyslog service using systemctl restart rsyslog
-    
-# target2-mgmt (172.16.1.11):
-
-    # change system name from target2 to webhost (change both hostname and /etc/hosts files)
-
-# Set the hostname to webhost in /etc/hostname
-ssh remoteadmin@target2-mgmt echo "webhost" > /etc/hostname
-
-# Update the current hostname on target2
-ssh remoteadmin@target2-mgmt hostnamectl set-hostname webhost
-
-# Display the updated hostname on target2
-echo -e "
-${GREEN}Updated hostname on target2 to:${RESET} webhost"
-
-    # change ip address from host 11 to host 4 on the lan
-
-# Update the ip address for target2 from host 11 to host 4 on the LAN.
-#ssh remoteadmin@target2-mgmt 
-
-    # add a machine named loghost to the /etc/hosts file as host 3 on the lan
-
-# Updated /etc/hosts file on webhost with information regarding loghost so that it is host 3 on the LAN.
-#ssh remoteadmin@target2-mgmt 
-
-    # install ufw if necessary and allow connections to port 80/tcp from anywhere
-    # install apache2 in its default configuration
-    # Configure rsyslog on webhost to send logs to loghost by modifying /etc/rsyslog.conf to add a line like this to the end of the file:
-# Update the ip address for target2 from host 11 to host 4 on the LAN.
-#ssh remoteadmin@target2-mgmt 
-
-    # add a machine named loghost to the /etc/hosts file as host 3 on the lan
-
-# Updated /etc/hosts file on webhost with information regarding loghost so that it is host 3 on the LAN.
-#ssh remoteadmin@target2-mgmt 
-
-    # install ufw if necessary and allow connections to port 80/tcp from anywhere
-    # install apache2 in its default configuration
-    # Configure rsyslog on webhost to send logs to loghost by modifying /etc/rsyslog.conf to add a line like this to the end of the file:
-
-    # add a machine named loghost to the /etc/hosts file as host 3 on the lan
-
-# Updated /etc/hosts file on webhost with information regarding loghost so that it is host 3 on the LAN.
-#ssh remoteadmin@target2-mgmt 
-
-    # install ufw if necessary and allow connections to port 80/tcp from anywhere
-    # install apache2 in its default configuration
-    # Configure rsyslog on webhost to send logs to loghost by modifying /etc/rsyslog.conf to add a line like this to the end of the file:
+# Retrieve the logs showing webhost from loghost
+ssh remoteadmin@loghost grep webhost /var/log/syslog
