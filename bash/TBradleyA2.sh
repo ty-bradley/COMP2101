@@ -116,7 +116,6 @@ UFWMESSAGE=""
 # # User configuration: List of usernames for account creation.
 USERNAMES=("dennis" "aubrey" "captain" "snibbles" "brownie" "scooter" "sandy" "perrier" "cindy" "tiger" "yoda")
 
-
 # Enstantiating variable names for script ends here
 #-----------------------------------------------------
 
@@ -204,7 +203,7 @@ if grep -q "$STATICINTERFACEIP" /etc/hosts; then
     ETCHOSTSENTRY=$(cat /etc/hosts | grep $STATICINTERFACEIP)
     
     echo -e "
-${GREEN}Updated entry to /etc/hosts:${RESET} $ETCHOSTSENTRY"
+${GREEN}Updated entry to /etc/hosts:${RESET} 192.168.16.21 generic-host"
 else
     
     # Entry doesn't exist, add it to the file with a host name.
@@ -213,7 +212,7 @@ else
     ETCHOSTSENTRY=$(cat /etc/hosts | grep $STATICINTERFACEIP)
     
     echo -e "
-${GREEN}Added entry to /etc/hosts:${RESET} $ETCHOSTSENTRY"
+${GREEN}Added entry to /etc/hosts:${RESET} 192.168.16.21 generic-host"
 fi
 
 
@@ -253,24 +252,36 @@ sudo systemctl restart ssh &> /dev/null
 
 # Check if Apache2 web server service is running
 if ! service apache2 status &> /dev/null; then
+    # Run a sudo apt-get update for compatibility.
+    sudo apt-get update &> /dev/null
     echo -e "
 ${RED}Apache2 web server service not found; Installing.${RESET}"
     sudo apt install -y apache2 &> /dev/null
+
+    # Start Apache2 service after installation
+    sudo systemctl start apache2 &> /dev/null
 else
- # If Apache2 web server service is already running, display that message to the user.
+    # If Apache2 web server service is already running, display that message to the user.
     echo -e "
 ${BLUE}Apache2 web server service already installed; Restarting..${RESET}"
+    sudo systemctl restart apache2 &> /dev/null
 fi
 
 # Check if Squid web proxy service is running
 if ! service squid status &> /dev/null; then
+    
     echo -e "
 ${RED}Squid web proxy service not found; Installing.${RESET}"
+    
     sudo apt install -y squid &> /dev/null
+
+    # Start Squid service after installation
+    sudo systemctl start squid &> /dev/null
 else
- # If Squid web proxy service is already running, display that message to the user.
+    # If Squid web proxy service is already running, display that message to the user.
     echo -e "
 ${BLUE}Squid web proxy service already installed; Restarting.. ${RESET}"
+    sudo systemctl restart squid &> /dev/null
 fi
 
 # Configure Squid to listen on port 3128, then restart the service.
@@ -287,13 +298,6 @@ ${CYAN}FIREWALL CONFIGURATION${RESET}
 
 ------------------------------------
 "
-
-# Enable UFW (Uncomplicated Firewall) and if already running display a message for the user.
-
-UFWMESSAGE=$(sudo ufw --force enable)
-echo -e "
-${GREEN}Enabling UFW (Uncomplicated Firewall):${RESET} $UFWMESSAGE"
-
 # Allow SSH on port 22: Displays a message if the rule is already active.
 
 UFWMESSAGE=$(sudo ufw allow 22/tcp)
@@ -318,6 +322,12 @@ UFWMESSAGE=$(sudo ufw allow 3128/tcp)
 echo -e "
 ${GREEN}Enabling UFW (Uncomplicated Firewall):${RESET} $UFWMESSAGE"
 
+# Enable UFW (Uncomplicated Firewall) and if already running display a message for the user.
+
+UFWMESSAGE=$(sudo ufw --force enable)
+echo -e "
+${GREEN}Enabling UFW (Uncomplicated Firewall):${RESET} $UFWMESSAGE"
+
 ## SECTION 4: USER ACCOUNTS AND SSH SETUP
 
 echo -e "
@@ -335,34 +345,53 @@ for USERNAME in "${USERNAMES[@]}"; do
         echo -e "
 ${YELLOW}User already exists:${RESET} $USERNAME"
     else
-        sudo useradd -m -s /bin/bash "$USERNAME" > /dev/null 2>&1
-        echo -e "${GREEN}Creating user:${RESET} $USERNAME"
+        sudo useradd -m -s /bin/bash "$USERNAME"
+        #> /dev/null 2>&1
+    echo -e "${GREEN}Creating user:${RESET} $USERNAME"
     fi
 done
 
 # SSH key configuration
 
 for USERNAME in "${USERNAMES[@]}"; do
-    
+
+# SSH directory (since it doesn't exist if the keys aren't being generated.)
+SSHDIR="/home/$USERNAME/.ssh"
+
+# Authorized SSH keys directory (since it doesn't exist if the keys aren't already generated.)
+AUTHKEYS="$SSHDIR/authorized_keys"
+
 # Check if the SSH key directory exists
-    if [ -d "/home/$USERNAME/.ssh" ]; then
-        # Check if the SSH key files already exist and print a message
-        if [ -f "/home/$USERNAME/.ssh/id_rsa" ] || [ -f "/home/$USERNAME/.ssh/id_ed25519" ]; then
-            echo -e "${YELLOW}SSH keys already exist for:${RESET} $USERNAME."
-        else
-            # This is the first time keys are being generated
-            echo -e "${GREEN}Generating SSH keys for:${RESET} $USERNAME"
-            # Generate SSH keys (RSA and Ed25519)
-            echo -e "y\n" | sudo -u "$USERNAME" ssh-keygen -t rsa -b 2048 -f "/home/$USERNAME/.ssh/id_rsa" -N "" > /dev/null
-            echo -e "y\n" | sudo -u "$USERNAME" ssh-keygen -t ed25519 -f "/home/$USERNAME/.ssh/id_ed25519" -N "" > /dev/null
-        fi
+if [ -d "/home/$USERNAME/.ssh" ]; then
+    # Check if the SSH key files already exist and print a message
+    if [ -f "/home/$USERNAME/.ssh/id_rsa" ] || [ -f "/home/$USERNAME/.ssh/id_ed25519" ]; then
+        echo -e "${YELLOW}SSH keys already exist for:${RESET} $USERNAME."
+    else
+        # This is the first time keys are being generated
+        echo -e "${GREEN}Generating SSH keys for:${RESET} $USERNAME"
+        # Generate SSH keys (RSA and Ed25519)
+        echo -e "y\n" | sudo -u "$USERNAME" ssh-keygen -t rsa -b 2048 -f "/home/$USERNAME/.ssh/id_rsa" -N "" > /dev/null
+        echo -e "y\n" | sudo -u "$USERNAME" ssh-keygen -t ed25519 -f "/home/$USERNAME/.ssh/id_ed25519" -N "" > /dev/null
     fi
+else
+    # If the .ssh directory doesn't exist, create it
+    sudo -u "$USERNAME" mkdir -p "/home/$USERNAME/.ssh"
+    echo -e "${GREEN}Generating SSH keys for:${RESET} $USERNAME"
+    # Generate SSH keys (RSA and Ed25519)
+    echo -e "y\n" | sudo -u "$USERNAME" ssh-keygen -t rsa -b 2048 -f "/home/$USERNAME/.ssh/id_rsa" -N "" > /dev/null
+    echo -e "y\n" | sudo -u "$USERNAME" ssh-keygen -t ed25519 -f "/home/$USERNAME/.ssh/id_ed25519" -N "" > /dev/null
+fi
+
+# Check if authorized_keys file exists, create if not
+if [ ! -f "$AUTHKEYS" ]; then
+    sudo -u "$USERNAME" touch "$AUTHKEYS"
+fi
 
     # Add the provided public key and grant sudo access to dennis by appending to authorized_keys.
     
     if [ "$USERNAME" == "dennis" ] && ! grep -q "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4rT3vTt99Ox5kndS4HmgTrKBT8SKzhK4rhGkEVGlCI student@generic-vm" "/home/dennis/.ssh/authorized_keys"; then
-        sudo usermod -aG sudo dennis
-        echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4rT3vTt99Ox5kndS4HmgTrKBT8SKzhK4rhGkEVGlCI student@generic-vm" | sudo -u dennis tee -a "/home/dennis/.ssh/authorized_keys" > /dev/null
+    sudo usermod -aG sudo dennis
+    echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4rT3vTt99Ox5kndS4HmgTrKBT8SKzhK4rhGkEVGlCI student@generic-vm" | sudo -u dennis bash -c 'cat >> /home/dennis/.ssh/authorized_keys'
     fi
     
      # Add the generated public keys to authorized_keys if they don't exist
@@ -383,4 +412,5 @@ for USERNAME in "${USERNAMES[@]}"; do
     # Set ownership for the user so that they may have access to the key folders.
     
     chown -R "$USERNAME:$USERNAME" "/home/$USERNAME/.ssh"
+
 done

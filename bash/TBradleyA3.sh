@@ -135,7 +135,7 @@ ${GREEN}Updated hostname on target2 to:${RESET} webhost"
 # Update the ip address for target2 from host 11 to host 4 on the LAN.
 ssh remoteadmin@target2-mgmt ip addr change 172.16.1.4/24 dev eth0
 
-# Add a machine named loghost to the /etc/hosts file as host 3 on the lan
+# Add a machine named loghost to the /etc/hosts file as host 3 on the LAN
 ssh remoteadmin@target2-mgmt echo '172.16.1.3 loghost' >> /etc/hosts
 
 # Install ufw if necessary and allow connections to port 80/tcp from anywhere
@@ -152,8 +152,8 @@ ssh remoteadmin@target2-mgmt sudo systemctl restart rsyslog
 
 
 # Update the NMS /etc/hosts file to have the name loghost with the correct IP address and the name webhost with the correct IP address.
-echo '172.16.1.3 loghost' >> /etc/hosts
-echo '172.16.1.4 webhost' >> /etc/hosts
+echo '192.168.16.3 loghost' >> /etc/hosts
+echo '192.168.16.4 webhost' >> /etc/hosts
 
 # Retrieve the logs showing webhost from loghost
 ssh remoteadmin@loghost grep webhost /var/log/syslog
