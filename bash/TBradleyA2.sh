@@ -199,7 +199,7 @@ if grep -q "$STATICINTERFACEIP" /etc/hosts; then
     
     # If the entry exists within, we update it and give it a new host name.
     
-    sed -i "s/^\(192.168.16.21\/24\s\+\).*$/\1generic-host/" /etc/hosts
+    sed -i "s/^\(192.168.16.21\s\+\).*$/\1generic-host/" /etc/hosts
     
     ETCHOSTSENTRY=$(cat /etc/hosts | grep $STATICINTERFACEIP)
     
@@ -296,25 +296,25 @@ ${GREEN}Enabling UFW (Uncomplicated Firewall):${RESET} $UFWMESSAGE"
 
 # Allow SSH on port 22: Displays a message if the rule is already active.
 
-UFWMESSAGE=$(sudo ufw allow 22)
+UFWMESSAGE=$(sudo ufw allow 22/tcp)
 echo -e "
 ${GREEN}Enabling UFW (Uncomplicated Firewall):${RESET} $UFWMESSAGE"
 
 # Allow HTTP on port 80: Displays a message if the rule is already active.
 
-UFWMESSAGE=$(sudo ufw allow 80)
+UFWMESSAGE=$(sudo ufw allow 80/tcp)
 echo -e "
 ${GREEN}Enabling UFW (Uncomplicated Firewall):${RESET} $UFWMESSAGE"
 
 # Allow HTTPS on port 443: Displays a message if the rule is already active.
 
-UFWMESSAGE=$(sudo ufw allow 443)
+UFWMESSAGE=$(sudo ufw allow 443/tcp)
 echo -e "
 ${GREEN}Enabling UFW (Uncomplicated Firewall):${RESET} $UFWMESSAGE"
 
 # Allow web proxy on port 3128: Displays a message if the rule is already active.
 
-UFWMESSAGE=$(sudo ufw allow 3128)
+UFWMESSAGE=$(sudo ufw allow 3128/tcp)
 echo -e "
 ${GREEN}Enabling UFW (Uncomplicated Firewall):${RESET} $UFWMESSAGE"
 
@@ -364,10 +364,10 @@ fi
 
     # Add the provided public key and grant sudo access to dennis by appending to authorized_keys.
     
-    if [ "$USERNAME" == "dennis" ]; then
-        sudo usermod -aG sudo dennis
-        echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4rT3vTt99Ox5kndS4HmgTrKBT8SKzhK4rhGkEVGlCI student@generic-vm" | sudo -u dennis tee -a "/home/dennis/.ssh/authorized_keys" > /dev/null
-    fi
+    if [ "$USERNAME" == "dennis" ] && ! grep -q "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4rT3vTt99Ox5kndS4HmgTrKBT8SKzhK4rhGkEVGlCI student@generic-vm" "/home/dennis/.ssh/authorized_keys"; then
+    sudo usermod -aG sudo dennis
+    echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4rT3vTt99Ox5kndS4HmgTrKBT8SKzhK4rhGkEVGlCI student@generic-vm" | sudo -u dennis tee -a "/home/dennis/.ssh/authorized_keys" > /dev/null
+fi
     
     # Add the generated public keys to authorized_keys
     
