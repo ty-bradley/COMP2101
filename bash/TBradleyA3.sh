@@ -80,10 +80,10 @@ CURRENTDATE=$(echo "$(date +%A), $(date +%B) $(date +%d), $(date +%+4Y)")
 CURRENTTIME=$(echo "$(date +%I):$(date +%M):$(date +%S) $(date +%p)")
 
 # IP address for loghost
-LOGHOSTIP="192.168.16.3"
+LOGHOSTIP="192.168.1.10"
 
 # IP address for webhost
-WEBHOSTIP="192.168.16.4"
+WEBHOSTIP="192.168.1.11"
 
 # Enstantiating variable names for script ends here
 #-----------------------------------------------------
@@ -108,6 +108,10 @@ ${YELLOW}Time${RESET}: $CURRENTTIME
 ----------------------------------
 "
 
+#---------------------------------
+#         NETWORK SERVICES
+#---------------------------------
+
 # target1-mgmt (172.16.1.10):
 
 # Set the hostname to loghost in /etc/hostname
@@ -122,58 +126,80 @@ ssh remoteadmin@target1-mgmt 'hostnamectl set-hostname loghost'
 echo -e "
 ${GREEN}Updated hostname on target1 to:${RESET} loghost"
 
-# Update the ip address for target1 from host 10 to host 3 on the LAN.
-ssh remoteadmin@target1-mgmt 'ip addr change 172.16.1.3/24 dev eth0'
+# After commenting out information about the interface in other netplan files, we go about creating a Netplan configuration file for static IP
+ssh remoteadmin@target1-mgmt "cat > /etc/netplan/50-cloud-init.yaml <<EOF
+network:
+    version: 2
+    ethernets:
+        eth0:
+            addresses: [192.168.16.10/24]
+            routes:
+              - to: default
+                via: 192.168.16.2
+            nameservers:
+                addresses: [192.168.16.2]
+                search: [home.arpa, localdomain]
+        eth1:
+            addresses: [172.16.1.3/24]
+EOF"
 
 # Display the updated ip address on the LAN for target 1
 echo -e "
-${GREEN}Updated ip address on loghost to:${RESET} 172.16.1.3/24 on eth0."
+${GREEN}Updated ip address on loghost to:${RESET} 172.16.1.3/24 on eth1."
+
+# Run the new Netplan configuration
+ssh remoteadmin@target1-mgmt 'sudo netplan apply &> /dev/null'
 
 # Updated /etc/hosts file on target1 with information regarding webhost so that it is host 4 on the LAN.
-ssh remoteadmin@target1-mgmt 'echo '172.16.1.4 webhost' >> /etc/hosts'
+ssh remoteadmin@172.16.1.3 'echo '172.16.1.4 webhost' >> /etc/hosts &> /dev/null'
 
 # Display the updated field on target1 in /etc/hosts
 echo -e "
 ${GREEN}Updated /etc/hosts with webhost field:${RESET} 172.16.1.4 webhost"
+
+#------------------------------------
+#           FIREWALL SERVICES
+#------------------------------------
+
 
 # Check if UFW service is running
 
 echo -e "
 ${GREEN}Checking if UFW is running on loghost...${RESET}"
 
-if ! service ufw status &> /dev/null; then
+if ! ssh remoteadmin@172.16.1.3 'sudo systemctl is-active ufw &> /dev/null'; then
     # Run a sudo apt-get update for compatibility.
     echo -e "
 ${RED}UFW service not found on loghost; Installing.${RESET}"
 
-    ssh remoteadmin@target1-mgmt 'sudo apt-get update &> /dev/null && sudo apt-get install -y ufw &> /dev/null'
+    ssh remoteadmin@172.16.1.3 'sudo apt-get update &> /dev/null && sudo apt-get install -y ufw &> /dev/null'
 
-    ssh remoteadmin@target1-mgmt 'sudo ufw allow from 172.16.1.0/24 to any port 514 proto udp &> /dev/null'
+    ssh remoteadmin@172.16.1.3 'sudo ufw allow from 172.16.1.0/24 to any port 514 proto udp &> /dev/null'
 
     # Start UFW service after installation
-    ssh remoteadmin@target1-mgmt 'sudo systemctl start ufw &> /dev/null'
+    ssh remoteadmin@172.16.1.3 'sudo systemctl start ufw &> /dev/null'
 else
     # If UFW service is already running, display that message to the user.
     echo -e "
 ${BLUE}UFW service already installed on loghost; Restarting..${RESET}"
     
-    ssh remoteadmin@target1-mgmt 'sudo ufw allow from 172.16.1.0/24 to any port 514 proto udp &> /dev/null'
-    ssh remoteadmin@target1-mgmt 'sudo ufw allow 22/tcp &> /dev/null'
-    ssh remoteadmin@target1-mgmt 'sudo systemctl restart ufw &> /dev/null'
+    ssh remoteadmin@172.16.1.3 'sudo ufw allow from 172.16.1.0/24 to any port 514 proto udp &> /dev/null'
+    ssh remoteadmin@172.16.1.3 'sudo ufw allow 22/tcp &> /dev/null'
+    ssh remoteadmin@172.16.1.3 'sudo systemctl restart ufw &> /dev/null'
 
 fi
 
 # configure rsyslog to listen for UDP connections (look in /etc/rsyslog.conf for the configuration settings lines that say imudp, and uncomment both of them)
 
-ssh remoteadmin@target1-mgmt "sudo sed -i 's/^#module(load=\"imudp\")/module(load=\"imudp\")/' /etc/rsyslog.conf"
-ssh remoteadmin@target1-mgmt "sudo sed -i 's/^#input(type=\"imudp\" port=\"514\")/input(type=\"imudp\" port=\"514\")/' /etc/rsyslog.conf"
+ssh remoteadmin@172.16.1.3 "sudo sed -i 's/^#module(load=\"imudp\")/module(load=\"imudp\")/' /etc/rsyslog.conf"
+ssh remoteadmin@172.16.1.3 "sudo sed -i 's/^#input(type=\"imudp\" port=\"514\")/input(type=\"imudp\" port=\"514\")/' /etc/rsyslog.conf"
 
 echo -e "
 ${GREEN}Configured rsyslog on loghost to listen for UDP connections.${RESET}"
 
 #restart the rsyslog service using systemctl restart rsyslog
 
-ssh remoteadmin@target1-mgmt "sudo systemctl restart rsyslog"
+ssh remoteadmin@172.16.1.3 "sudo systemctl restart rsyslog"
 
 echo -e "
 ${GREEN}Restarting rsyslog on loghost.${RESET}"
@@ -194,27 +220,47 @@ ssh remoteadmin@target2-mgmt 'hostnamectl set-hostname webhost'
 echo -e "
 ${GREEN}Updated hostname on target2 to:${RESET} webhost"
 
-# Update the ip address for target2 from host 11 to host 4 on the LAN.
-ssh remoteadmin@target2-mgmt 'ip addr change 172.16.1.4/24 dev eth0'
+# After commenting out information about the interface in other netplan files, we go about creating a Netplan configuration file for static IP
+ssh remoteadmin@target2-mgmt "cat > /etc/netplan/50-cloud-init.yaml <<EOF
+network:
+    version: 2
+    ethernets:
+        eth0:
+            addresses: [192.168.16.11/24]
+            routes:
+              - to: default
+                via: 192.168.16.2
+            nameservers:
+                addresses: [192.168.16.2]
+                search: [home.arpa, localdomain]
+        eth1:
+            addresses: [172.16.1.4/24]
+EOF"
 
-# Display the updated ip address on the LAN for target 2
+# Display the updated ip address on the LAN for target 1
 echo -e "
-${GREEN}Updated ip address on webhost to:${RESET} 172.16.1.4/24 on eth0."
+${GREEN}Updated ip address on loghost to:${RESET} 172.16.1.4/24 on eth1."
 
-# Add a machine named loghost to the /etc/hosts file as host 3 on the LAN
-ssh remoteadmin@target2-mgmt 'echo '172.16.1.3 loghost' >> /etc/hosts'
+# Run the new Netplan configuration
+ssh remoteadmin@target2-mgmt 'sudo netplan apply &> /dev/null'
 
-# Display the updated field on target2 in /etc/hosts
+# Updated /etc/hosts file on target1 with information regarding webhost so that it is host 4 on the LAN.
+ssh remoteadmin@172.16.1.4 'echo '172.16.1.4 webhost' >> /etc/hosts &> /dev/null'
+
+# Display the updated field on target1 in /etc/hosts
 echo -e "
-${GREEN}Updated /etc/hosts with loghost field:${RESET} 172.16.1.3 loghost"
+${GREEN}Updated /etc/hosts with webhost field:${RESET} 172.16.1.4 webhost"
+
+#------------------------------------
+#           FIREWALL SERVICES
+#------------------------------------
 
 # Check if UFW service is running
 
 echo -e "
 ${GREEN}Checking if UFW is running on webhost...${RESET}"
 
-if ! service ufw status &> /dev/null; then
-    # Run a sudo apt-get update for compatibility.
+if ! ssh remoteadmin@target2-mgmt 'sudo systemctl is-active ufw &> /dev/null'; then    # Run a sudo apt-get update for compatibility.
     echo -e "
 ${RED}UFW service not found on webhost; Installing.${RESET}"
 
@@ -316,4 +362,4 @@ echo -e "
 ${GREEN}Updating /etc/hosts with entries for loghost and webhost.${RESET}"
 
 # Retrieve the logs showing webhost from loghost
-ssh remoteadmin@loghost "grep target2 /var/log/syslog"
+ssh remoteadmin@loghost "grep webhost /var/log/syslog"
