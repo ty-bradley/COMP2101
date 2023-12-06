@@ -1,4 +1,4 @@
-# #!/bin/bash
+#!/bin/bash
 
 # # Name: Ty Bradley
 # # Course: COMP2137 - Linux Automation
@@ -85,10 +85,10 @@ CURRENTDATE=$(echo "$(date +%A), $(date +%B) $(date +%d), $(date +%+4Y)")
 CURRENTTIME=$(echo "$(date +%I):$(date +%M):$(date +%S) $(date +%p)")
 
 # IP address for loghost
-LOGHOSTIP="192.168.1.10"
+LOGHOSTIP="192.168.16.3"
 
 # IP address for webhost
-WEBHOSTIP="192.168.1.11"
+WEBHOSTIP="192.168.16.4"
 
 # Enstantiating variable names for script ends here
 #-----------------------------------------------------
@@ -139,7 +139,7 @@ network:
     version: 2
     ethernets:
         eth0:
-            addresses: [192.168.16.10/24]
+            addresses: [192.168.16.3/24]
             routes:
               - to: default
                 via: 192.168.16.2
@@ -147,24 +147,45 @@ network:
                 addresses: [192.168.16.2]
                 search: [home.arpa, localdomain]
         eth1:
-            addresses: [172.16.1.3/24]
+            addresses: [172.16.1.10/24]
 EOF"
 
 # Display the updated ip address on the LAN for target 1
 echo -e "
-${GREEN}Updated ip address on loghost to:${RESET} 172.16.1.3/24 on eth1."
+${GREEN}Updated ip address on loghost to:${RESET} 192.168.16.3/24 on eth0."
+
+#ssh-keyscan -t ed25519 "loghost" >>~/.ssh/known_hosts #2>/dev/null
 
 # Run the new Netplan configuration
 ssh remoteadmin@target1-mgmt 'sudo netplan apply &> /dev/null'
 
+# Check if an entry exists in /etc/hosts for the loghost's IP.
+if grep -q "$LOGHOSTIP loghost" /etc/hosts; then
+    # If the entry exists, update it with a new host name.
+    sudo sed -i "s/^$LOGHOSTIP.*/$LOGHOSTIP loghost/" /etc/hosts
+    LOGHOSTETC=$(grep "$LOGHOSTIP loghost" /etc/hosts)
+    echo -e "
+    ${GREEN}Updated entry in /etc/hosts:${RESET} $LOGHOSTETC"
+else
+    # Entry doesn't exist, add it to the file with a host name.
+    sudo bash -c "echo '$LOGHOSTIP loghost' >> /etc/hosts"
+    LOGHOSTETC=$(grep "$LOGHOSTIP loghost" /etc/hosts)
+    echo -e "
+    ${GREEN}Added entry to /etc/hosts:${RESET} $LOGHOSTETC"
+fi
+
 ssh-keyscan -t ed25519 "loghost" >>~/.ssh/known_hosts 2>/dev/null
 
+
 # Updated /etc/hosts file on target1 with information regarding webhost so that it is host 4 on the LAN.
-ssh remoteadmin@loghost 'echo '172.16.1.4 webhost' >> /etc/hosts &> /dev/null'
+ssh remoteadmin@target1-mgmt 'echo "192.168.16.4 webhost" | sudo tee -a /etc/hosts &> /dev/null'
+
+# Updated /etc/hosts file on target1 with information regarding webhost so that it is host 4 on the LAN.
+ssh remoteadmin@target1-mgmt 'echo "192.168.16.3 loghost" | sudo tee -a /etc/hosts &> /dev/null'
 
 # Display the updated field on target1 in /etc/hosts
 echo -e "
-${GREEN}Updated /etc/hosts with webhost field:${RESET} 172.16.1.4 webhost"
+${GREEN}Updated /etc/hosts with webhost field:${RESET} 192.168.16.4 webhost"
 
 #------------------------------------
 #           FIREWALL SERVICES
@@ -183,7 +204,7 @@ ${RED}UFW service not found on loghost; Installing.${RESET}"
 
     ssh remoteadmin@loghost 'sudo apt-get update &> /dev/null && sudo apt-get install -y ufw &> /dev/null'
 
-    ssh remoteadmin@loghost 'sudo ufw allow from 172.16.1.0/24 to any port 514 proto udp &> /dev/null'
+    ssh remoteadmin@loghost 'sudo ufw allow from 192.168.16.0/24 to any port 514 proto udp &> /dev/null'
 
     # Start UFW service after installation
     ssh remoteadmin@loghost 'sudo systemctl start ufw &> /dev/null'
@@ -192,7 +213,7 @@ else
     echo -e "
 ${BLUE}UFW service already installed on loghost; Restarting..${RESET}"
     
-    ssh remoteadmin@loghost 'sudo ufw allow from 172.16.1.0/24 to any port 514 proto udp &> /dev/null'
+    ssh remoteadmin@loghost 'sudo ufw allow from 192.168.16.0/24 to any port 514 proto udp &> /dev/null'
     ssh remoteadmin@loghost 'sudo ufw allow 22/tcp &> /dev/null'
     ssh remoteadmin@loghost 'sudo systemctl restart ufw &> /dev/null'
 
@@ -237,7 +258,7 @@ network:
     version: 2
     ethernets:
         eth0:
-            addresses: [192.168.16.11/24]
+            addresses: [192.168.16.4/24]
             routes:
               - to: default
                 via: 192.168.16.2
@@ -245,24 +266,42 @@ network:
                 addresses: [192.168.16.2]
                 search: [home.arpa, localdomain]
         eth1:
-            addresses: [172.16.1.4/24]
+            addresses: [172.16.1.11/24]
 EOF"
 
 # Display the updated ip address on the LAN for target 1
 echo -e "
-${GREEN}Updated ip address on loghost to:${RESET} 172.16.1.4/24 on eth1."
+${GREEN}Updated ip address on loghost to:${RESET} 192.168.16.4/24 on eth0."
 
 # Run the new Netplan configuration
 ssh remoteadmin@target2-mgmt 'sudo netplan apply &> /dev/null'
 
+# Check if an entry exists in /etc/hosts for the webhosts's IP.
+if grep -q "$WEBHOSTIP webhost" /etc/hosts; then
+    # If the entry exists, update it with a new host name.
+    sudo sed -i "s/^$WEBHOSTIP.*/$WEBHOSTIP webhost/" /etc/hosts
+    WEBHOSTETC=$(grep "$WEBHOSTIP webhost" /etc/hosts)
+    echo -e "
+    ${GREEN}Updated entry in /etc/hosts:${RESET} $WEBHOSTETC"
+else
+    # Entry doesn't exist, add it to the file with a host name.
+    sudo bash -c "echo '$WEBHOSTIP webhost' >> /etc/hosts"
+    WEBHOSTETC=$(grep "$WEBHOSTIP webhost" /etc/hosts)
+    echo -e "
+    ${GREEN}Added entry to /etc/hosts:${RESET} $WEBHOSTETC"
+fi
+
 ssh-keyscan -t ed25519 "webhost" >>~/.ssh/known_hosts 2>/dev/null
 
-# Updated /etc/hosts file on target1 with information regarding webhost so that it is host 4 on the LAN.
-ssh remoteadmin@webhost 'echo '172.16.1.4 webhost' >> /etc/hosts &> /dev/null'
+# Updated /etc/hosts file on target2 with information regarding webhost so that it is host 4 on the LAN.
+ssh remoteadmin@target2-mgmt 'echo "192.168.16.4 webhost" | sudo tee -a /etc/hosts &> /dev/null'
 
-# Display the updated field on target1 in /etc/hosts
+# Updated /etc/hosts file on target2 with information regarding loghost so that it is host 3 on the LAN.
+ssh remoteadmin@target2-mgmt 'echo "192.168.16.3 loghost" | sudo tee -a /etc/hosts &> /dev/null'
+
+# Display the updated field on target2 in /etc/hosts
 echo -e "
-${GREEN}Updated /etc/hosts with webhost field:${RESET} 172.16.1.4 webhost"
+${GREEN}Updated /etc/hosts with webhost field:${RESET} 192.168.16.4 webhost"
 
 #------------------------------------
 #           FIREWALL SERVICES
@@ -341,38 +380,7 @@ ${GREEN}Restarting rsyslog on webhost.${RESET}"
 #sudo bash -c 'echo "192.168.16.3 loghost" >> /etc/hosts'
 #sudo bash -c 'echo "192.168.16.4 webhost" >> /etc/hosts'
 
-# Check if an entry exists in /etc/hosts for the loghost's IP.
-if grep -q "$LOGHOSTIP loghost" /etc/hosts; then
-    # If the entry exists, update it with a new host name.
-    sudo sed -i "s/^$LOGHOSTIP.*/$LOGHOSTIP loghost/" /etc/hosts
-    LOGHOSTETC=$(grep "$LOGHOSTIP loghost" /etc/hosts)
-    echo -e "
-    ${GREEN}Updated entry in /etc/hosts:${RESET} $LOGHOSTETC"
-else
-    # Entry doesn't exist, add it to the file with a host name.
-    sudo bash -c "echo '$LOGHOSTIP loghost' >> /etc/hosts"
-    LOGHOSTETC=$(grep "$LOGHOSTIP loghost" /etc/hosts)
-    echo -e "
-    ${GREEN}Added entry to /etc/hosts:${RESET} $LOGHOSTETC"
-fi
-
-# Check if an entry exists in /etc/hosts for the webhosts's IP.
-if grep -q "$WEBHOSTIP webhost" /etc/hosts; then
-    # If the entry exists, update it with a new host name.
-    sudo sed -i "s/^$WEBHOSTIP.*/$WEBHOSTIP webhost/" /etc/hosts
-    WEBHOSTETC=$(grep "$WEBHOSTIP webhost" /etc/hosts)
-    echo -e "
-    ${GREEN}Updated entry in /etc/hosts:${RESET} $WEBHOSTETC"
-else
-    # Entry doesn't exist, add it to the file with a host name.
-    sudo bash -c "echo '$WEBHOSTIP webhost' >> /etc/hosts"
-    WEBHOSTETC=$(grep "$WEBHOSTIP webhost" /etc/hosts)
-    echo -e "
-    ${GREEN}Added entry to /etc/hosts:${RESET} $WEBHOSTETC"
-fi
-
-echo -e "
-${GREEN}Updating /etc/hosts with entries for loghost and webhost.${RESET}"
+echo -e "${GREEN}Updating /etc/hosts with entries for loghost and webhost.${RESET}"
 
 # Retrieve the logs showing webhost from loghost
-ssh remoteadmin@loghost "grep webhost /var/log/syslog"
+ssh remoteadmin@loghost 'if grep -q "webhost" /var/log/syslog; then grep "webhost" /var/log/syslog | head -n 1 && echo "Receiving logs from webhost"; else echo "No logs from webhost found."; fi'
