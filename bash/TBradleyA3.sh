@@ -282,15 +282,15 @@ ${RED}UFW service not found on webhost; Installing.${RESET}"
     ssh remoteadmin@webhost 'sudo ufw allow 80/tcp &> /dev/null'
 
     # Start UFW service after installation
-    ssh remoteadmin@webhost 'sudo systemctl start ufw &> /dev/null'
+    ssh remoteadmin@target2-mgmt 'sudo systemctl start ufw &> /dev/null'
 else
     # If UFW service is already running, display that message to the user.
     echo -e "
 ${BLUE}UFW service already installed on webhost; Restarting..${RESET}"
     
-    ssh remoteadmin@webhost 'sudo ufw allow 80/tcp &> /dev/null'
-    ssh remoteadmin@webhost 'sudo ufw allow 22/tcp &> /dev/null'
-    ssh remoteadmin@webhost 'sudo systemctl restart ufw &> /dev/null'
+    ssh remoteadmin@target2-mgmt 'sudo ufw allow 80/tcp &> /dev/null'
+    ssh remoteadmin@target2-mgmt 'sudo ufw allow 22/tcp &> /dev/null'
+    ssh remoteadmin@target2-mgmt 'sudo systemctl restart ufw &> /dev/null'
 
 fi
 
@@ -303,36 +303,36 @@ fi
 echo -e "
 ${GREEN}Checking if Apache2 web service is running on webhost...${RESET}"
 
-if ! ssh remoteadmin@webhost 'systemctl is-active --quiet apache2'; then
+if ! ssh remoteadmin@target2-mgmt 'systemctl is-active --quiet apache2'; then
     
     # Run a sudo apt-get update for compatibility.
     echo -e "
     ${RED}Apache2 web server service not found on webhost; Installing.${RESET}"
     
-    ssh remoteadmin@webhost "sudo apt-get update &> /dev/null && apt-get install -y apache2 &> /dev/null"
+    ssh remoteadmin@target2-mgmt "sudo apt-get update &> /dev/null && apt-get install -y apache2 &> /dev/null"
 
     # Start Apache2 service after installation
-    ssh remoteadmin@webhost 'sudo systemctl start apache2 &> /dev/null'
+    ssh remoteadmin@target2-mgmt 'sudo systemctl start apache2 &> /dev/null'
 else
     # If Apache2 web server service is already running, display that message to the user.
     echo -e "${BLUE}Apache2 web server service already installed on webhost; Restarting..${RESET}"
     
-    ssh remoteadmin@webhost 'sudo systemctl restart apache2 &> /dev/null'
+    ssh remoteadmin@target2-mgmt 'sudo systemctl restart apache2 &> /dev/null'
 fi
 
 # Configure rsyslog on webhost to send logs to loghost
-ssh remoteadmin@webhost "sudo sed -i 's/^#module(load=\"imudp\")/module(load=\"imudp\")/' /etc/rsyslog.conf"
-ssh remoteadmin@webhost "sudo sed -i 's/^#input(type=\"imudp\" port=\"514\")/input(type=\"imudp\" port=\"514\")/' /etc/rsyslog.conf"
+ssh remoteadmin@target2-mgmt "sudo sed -i 's/^#module(load=\"imudp\")/module(load=\"imudp\")/' /etc/rsyslog.conf"
+ssh remoteadmin@target2-mgmt "sudo sed -i 's/^#input(type=\"imudp\" port=\"514\")/input(type=\"imudp\" port=\"514\")/' /etc/rsyslog.conf"
 
 echo -e "
 ${GREEN}Configured rsyslog on webhost to send logs to loghost.${RESET}"
 
 # Configure rsyslog on webhost to send all log messages to the loghost.
-ssh remoteadmin@webhost "echo '*.* @loghost' | sudo bash -c 'cat >> /etc/rsyslog.conf'"
+ssh remoteadmin@target2-mgmt "echo '*.* @loghost' | sudo bash -c 'cat >> /etc/rsyslog.conf'"
 
 #restart the rsyslog service using systemctl restart rsyslog
 
-ssh remoteadmin@webhost "sudo systemctl restart rsyslog"
+ssh remoteadmin@target2-mgmt "sudo systemctl restart rsyslog"
 
 echo -e "
 ${GREEN}Restarting rsyslog on webhost.${RESET}"
@@ -375,4 +375,4 @@ echo -e "
 ${GREEN}Updating /etc/hosts with entries for loghost and webhost.${RESET}"
 
 # Retrieve the logs showing webhost from loghost
-ssh remoteadmin@webhost "grep webhost /var/log/syslog"
+ssh remoteadmin@loghost "grep webhost /var/log/syslog"
