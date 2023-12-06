@@ -67,6 +67,11 @@ RESET='\033[0m' # Reset text formatting and color
 
 # You are done with the learning activity for this lesson and should proceed to writing the quiz for this lesson before the next class in this course begins.
 
+
+# lxc exec containername command - FOR
+# lxc list
+# lxc exec containername bash
+
 # Enstantiating variable names for script begins here
 #-----------------------------------------------------
 
@@ -114,6 +119,8 @@ ${YELLOW}Time${RESET}: $CURRENTTIME
 
 # target1-mgmt (172.16.1.10):
 
+ssh-keyscan -t ed25519 "target1-mgmt" >>~/.ssh/known_hosts 2>/dev/null
+
 # Set the hostname to loghost in /etc/hostname
 ssh remoteadmin@target1-mgmt 'echo "loghost" > /etc/hostname'
 
@@ -150,8 +157,10 @@ ${GREEN}Updated ip address on loghost to:${RESET} 172.16.1.3/24 on eth1."
 # Run the new Netplan configuration
 ssh remoteadmin@target1-mgmt 'sudo netplan apply &> /dev/null'
 
+ssh-keyscan -t ed25519 "loghost" >>~/.ssh/known_hosts 2>/dev/null
+
 # Updated /etc/hosts file on target1 with information regarding webhost so that it is host 4 on the LAN.
-ssh remoteadmin@172.16.1.3 'echo '172.16.1.4 webhost' >> /etc/hosts &> /dev/null'
+ssh remoteadmin@loghost 'echo '172.16.1.4 webhost' >> /etc/hosts &> /dev/null'
 
 # Display the updated field on target1 in /etc/hosts
 echo -e "
@@ -167,45 +176,47 @@ ${GREEN}Updated /etc/hosts with webhost field:${RESET} 172.16.1.4 webhost"
 echo -e "
 ${GREEN}Checking if UFW is running on loghost...${RESET}"
 
-if ! ssh remoteadmin@172.16.1.3 'sudo systemctl is-active ufw &> /dev/null'; then
+if ! ssh remoteadmin@loghost 'sudo systemctl is-active ufw &> /dev/null'; then
     # Run a sudo apt-get update for compatibility.
     echo -e "
 ${RED}UFW service not found on loghost; Installing.${RESET}"
 
-    ssh remoteadmin@172.16.1.3 'sudo apt-get update &> /dev/null && sudo apt-get install -y ufw &> /dev/null'
+    ssh remoteadmin@loghost 'sudo apt-get update &> /dev/null && sudo apt-get install -y ufw &> /dev/null'
 
-    ssh remoteadmin@172.16.1.3 'sudo ufw allow from 172.16.1.0/24 to any port 514 proto udp &> /dev/null'
+    ssh remoteadmin@loghost 'sudo ufw allow from 172.16.1.0/24 to any port 514 proto udp &> /dev/null'
 
     # Start UFW service after installation
-    ssh remoteadmin@172.16.1.3 'sudo systemctl start ufw &> /dev/null'
+    ssh remoteadmin@loghost 'sudo systemctl start ufw &> /dev/null'
 else
     # If UFW service is already running, display that message to the user.
     echo -e "
 ${BLUE}UFW service already installed on loghost; Restarting..${RESET}"
     
-    ssh remoteadmin@172.16.1.3 'sudo ufw allow from 172.16.1.0/24 to any port 514 proto udp &> /dev/null'
-    ssh remoteadmin@172.16.1.3 'sudo ufw allow 22/tcp &> /dev/null'
-    ssh remoteadmin@172.16.1.3 'sudo systemctl restart ufw &> /dev/null'
+    ssh remoteadmin@loghost 'sudo ufw allow from 172.16.1.0/24 to any port 514 proto udp &> /dev/null'
+    ssh remoteadmin@loghost 'sudo ufw allow 22/tcp &> /dev/null'
+    ssh remoteadmin@loghost 'sudo systemctl restart ufw &> /dev/null'
 
 fi
 
 # configure rsyslog to listen for UDP connections (look in /etc/rsyslog.conf for the configuration settings lines that say imudp, and uncomment both of them)
 
-ssh remoteadmin@172.16.1.3 "sudo sed -i 's/^#module(load=\"imudp\")/module(load=\"imudp\")/' /etc/rsyslog.conf"
-ssh remoteadmin@172.16.1.3 "sudo sed -i 's/^#input(type=\"imudp\" port=\"514\")/input(type=\"imudp\" port=\"514\")/' /etc/rsyslog.conf"
+ssh remoteadmin@loghost "sudo sed -i 's/^#module(load=\"imudp\")/module(load=\"imudp\")/' /etc/rsyslog.conf"
+ssh remoteadmin@loghost "sudo sed -i 's/^#input(type=\"imudp\" port=\"514\")/input(type=\"imudp\" port=\"514\")/' /etc/rsyslog.conf"
 
 echo -e "
 ${GREEN}Configured rsyslog on loghost to listen for UDP connections.${RESET}"
 
 #restart the rsyslog service using systemctl restart rsyslog
 
-ssh remoteadmin@172.16.1.3 "sudo systemctl restart rsyslog"
+ssh remoteadmin@loghost "sudo systemctl restart rsyslog"
 
 echo -e "
 ${GREEN}Restarting rsyslog on loghost.${RESET}"
 
 
 # target2-mgmt (172.16.1.11):
+
+ssh-keyscan -t ed25519 "target2-mgmt" >>~/.ssh/known_hosts 2>/dev/null
 
 # Set the hostname to webhost in /etc/hostname
 ssh remoteadmin@target2-mgmt 'echo "webhost" > /etc/hostname'
@@ -244,8 +255,10 @@ ${GREEN}Updated ip address on loghost to:${RESET} 172.16.1.4/24 on eth1."
 # Run the new Netplan configuration
 ssh remoteadmin@target2-mgmt 'sudo netplan apply &> /dev/null'
 
+ssh-keyscan -t ed25519 "webhost" >>~/.ssh/known_hosts 2>/dev/null
+
 # Updated /etc/hosts file on target1 with information regarding webhost so that it is host 4 on the LAN.
-ssh remoteadmin@172.16.1.4 'echo '172.16.1.4 webhost' >> /etc/hosts &> /dev/null'
+ssh remoteadmin@webhost 'echo '172.16.1.4 webhost' >> /etc/hosts &> /dev/null'
 
 # Display the updated field on target1 in /etc/hosts
 echo -e "
@@ -260,24 +273,24 @@ ${GREEN}Updated /etc/hosts with webhost field:${RESET} 172.16.1.4 webhost"
 echo -e "
 ${GREEN}Checking if UFW is running on webhost...${RESET}"
 
-if ! ssh remoteadmin@target2-mgmt 'sudo systemctl is-active ufw &> /dev/null'; then    # Run a sudo apt-get update for compatibility.
+if ! ssh remoteadmin@webhost 'sudo systemctl is-active ufw &> /dev/null'; then    # Run a sudo apt-get update for compatibility.
     echo -e "
 ${RED}UFW service not found on webhost; Installing.${RESET}"
 
-    ssh remoteadmin@target2-mgmt 'sudo apt-get update &> /dev/null && sudo apt-get install -y ufw &> /dev/null'
+    ssh remoteadmin@webhost 'sudo apt-get update &> /dev/null && sudo apt-get install -y ufw &> /dev/null'
 
-    ssh remoteadmin@target2-mgmt 'sudo ufw allow 80/tcp &> /dev/null'
+    ssh remoteadmin@webhost 'sudo ufw allow 80/tcp &> /dev/null'
 
     # Start UFW service after installation
-    ssh remoteadmin@target2-mgmt 'sudo systemctl start ufw &> /dev/null'
+    ssh remoteadmin@webhost 'sudo systemctl start ufw &> /dev/null'
 else
     # If UFW service is already running, display that message to the user.
     echo -e "
 ${BLUE}UFW service already installed on webhost; Restarting..${RESET}"
     
-    ssh remoteadmin@target2-mgmt 'sudo ufw allow 80/tcp &> /dev/null'
-    ssh remoteadmin@target2-mgmt 'sudo ufw allow 22/tcp &> /dev/null'
-    ssh remoteadmin@target2-mgmt 'sudo systemctl restart ufw &> /dev/null'
+    ssh remoteadmin@webhost 'sudo ufw allow 80/tcp &> /dev/null'
+    ssh remoteadmin@webhost 'sudo ufw allow 22/tcp &> /dev/null'
+    ssh remoteadmin@webhost 'sudo systemctl restart ufw &> /dev/null'
 
 fi
 
@@ -290,36 +303,36 @@ fi
 echo -e "
 ${GREEN}Checking if Apache2 web service is running on webhost...${RESET}"
 
-if ! ssh remoteadmin@target2-mgmt 'systemctl is-active --quiet apache2'; then
+if ! ssh remoteadmin@webhost 'systemctl is-active --quiet apache2'; then
     
     # Run a sudo apt-get update for compatibility.
     echo -e "
     ${RED}Apache2 web server service not found on webhost; Installing.${RESET}"
     
-    ssh remoteadmin@target2-mgmt "sudo apt-get update &> /dev/null && apt-get install -y apache2 &> /dev/null"
+    ssh remoteadmin@webhost "sudo apt-get update &> /dev/null && apt-get install -y apache2 &> /dev/null"
 
     # Start Apache2 service after installation
-    ssh remoteadmin@target2-mgmt 'sudo systemctl start apache2 &> /dev/null'
+    ssh remoteadmin@webhost 'sudo systemctl start apache2 &> /dev/null'
 else
     # If Apache2 web server service is already running, display that message to the user.
     echo -e "${BLUE}Apache2 web server service already installed on webhost; Restarting..${RESET}"
     
-    ssh remoteadmin@target2-mgmt 'sudo systemctl restart apache2 &> /dev/null'
+    ssh remoteadmin@webhost 'sudo systemctl restart apache2 &> /dev/null'
 fi
 
 # Configure rsyslog on webhost to send logs to loghost
-ssh remoteadmin@target2-mgmt "sudo sed -i 's/^#module(load=\"imudp\")/module(load=\"imudp\")/' /etc/rsyslog.conf"
-ssh remoteadmin@target2-mgmt "sudo sed -i 's/^#input(type=\"imudp\" port=\"514\")/input(type=\"imudp\" port=\"514\")/' /etc/rsyslog.conf"
+ssh remoteadmin@webhost "sudo sed -i 's/^#module(load=\"imudp\")/module(load=\"imudp\")/' /etc/rsyslog.conf"
+ssh remoteadmin@webhost "sudo sed -i 's/^#input(type=\"imudp\" port=\"514\")/input(type=\"imudp\" port=\"514\")/' /etc/rsyslog.conf"
 
 echo -e "
 ${GREEN}Configured rsyslog on webhost to send logs to loghost.${RESET}"
 
 # Configure rsyslog on webhost to send all log messages to the loghost.
-ssh remoteadmin@target2-mgmt "echo '*.* @loghost' | sudo bash -c 'cat >> /etc/rsyslog.conf'"
+ssh remoteadmin@webhost "echo '*.* @loghost' | sudo bash -c 'cat >> /etc/rsyslog.conf'"
 
 #restart the rsyslog service using systemctl restart rsyslog
 
-ssh remoteadmin@target2-mgmt "sudo systemctl restart rsyslog"
+ssh remoteadmin@webhost "sudo systemctl restart rsyslog"
 
 echo -e "
 ${GREEN}Restarting rsyslog on webhost.${RESET}"
@@ -362,4 +375,4 @@ echo -e "
 ${GREEN}Updating /etc/hosts with entries for loghost and webhost.${RESET}"
 
 # Retrieve the logs showing webhost from loghost
-ssh remoteadmin@loghost "grep webhost /var/log/syslog"
+ssh remoteadmin@webhost "grep webhost /var/log/syslog"
