@@ -1,0 +1,27 @@
+# YAML file that runs on target2, installs MySQL, and enables UFW allowing SSH and MySQL (tcp only)
+
+# Define the play - Install and configure MySQL on target2
+- name: Install and configure MySQL on target2
+  hosts: target2
+  remote_user: remoteadmin
+  become: yes #Enable sudo on target2
+
+  # List of tasks to be executed on target2
+  tasks:
+  # Task to install MySQL
+    - name: Install MySQL
+      apt:
+        name: mysql-server
+        state: present
+      become: yes # Run this task with sudo
+
+# Task to enable UFW and allow SSH and MySQL (tcp only)
+    - name: Enable UFW and allow SSH and MySQL (tcp only)
+      ufw:
+        rule: allow
+        port: "{{ item }}" # Specifying the port dynamically using Ansible
+        proto: tcp
+        state: enabled
+      with_items:
+        - 22    # SSH
+        - 3306  # MySQL

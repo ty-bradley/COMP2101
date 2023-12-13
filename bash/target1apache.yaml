@@ -1,0 +1,27 @@
+# YAML file that runs on target1, installs apache2 and enables UFW and allows SSH And HTTP (tcp only)
+
+# Define the play - Install and configure Apache2 on target1
+- name: Install and configure Apache2 on target1
+  hosts: target1
+  remote_user: remoteadmin
+  become: yes #Enable sudo on target1
+  
+  # List of tasks to be executed on target1
+  tasks:
+  # Task to install Apache2
+    - name: Install Apache2
+      apt:
+        name: apache2
+        state: present
+      become: yes # Run this task with sudo
+
+# Task to enable UFW and allow SSH and HTTP (tcp only)
+    - name: Enable UFW and allow SSH and HTTP (tcp only)
+      ufw:
+        rule: allow
+        port: "{{ item }}" # Specifying the port dynamically using Ansible
+        proto: tcp
+        state: enabled
+      with_items:
+        - 22  # SSH
+        - 80  # HTTP
